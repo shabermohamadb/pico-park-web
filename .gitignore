@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+*.log
+.env
+dist/
+original/
+extracted_stages/
+extracted_sounds/
+extracted_textures/
+extracted_assets/
+convert_stages.py

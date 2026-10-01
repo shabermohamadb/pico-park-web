@@ -1,0 +1,124 @@
+{
+  "worlds": [
+    {
+      "id": 1,
+      "name": "HELLO PICO PARK",
+      "stages": [
+        "stage_jump01",
+        "stage_push02",
+        "stage_jump02",
+        "stage_push01"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "GO TOGETHER",
+      "stages": [
+        "stage_fall01",
+        "stage_constraint01",
+        "stage_fall02",
+        "stage_constraint02"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "ALL FOR ONE",
+      "stages": [
+        "stage_majo01",
+        "stage_multijump01",
+        "stage_majo02",
+        "stage_multijump02"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "HAND GIMMICK",
+      "stages": [
+        "stage_gun01",
+        "stage_magnet01",
+        "stage_gun02",
+        "stage_magnet02"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "GIMMICK GIMMICK",
+      "stages": [
+        "stage_thunder01",
+        "stage_big_and_small",
+        "stage_stopwatch01",
+        "stage_thunder02"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "TWO PLAYERS",
+      "stages": [
+        "stage_darkness01",
+        "stage_jump07",
+        "stage_darkness02",
+        "stage_jump04"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "TIME LIMIT",
+      "stages": [
+        "stage_coin01",
+        "stage_time_limit02",
+        "stage_coin02",
+        "stage_time_limit01"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "RETRO GAME",
+      "stages": [
+        "stage_breakout01",
+        "stage_switch_puzzle01",
+        "stage_breakout02",
+        "stage_switch_puzzle02"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "MOVE AND STOP",
+      "stages": [
+        "stage_bowwow01",
+        "stage_traffic_light01",
+        "stage_ghost01",
+        "stage_move01"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "BALL PARK",
+      "stages": [
+        "stage_seesaw01",
+        "stage_breakout03",
+        "stage_laser_ball01",
+        "stage_bound01"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "SCROLL PARK",
+      "stages": [
+        "stage_auto_scroll01",
+        "stage_plane01",
+        "stage_auto_scroll02",
+        "stage_plane02"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "JUMP JUMP JUMP",
+      "stages": [
+        "stage_weight01",
+        "stage_jump06",
+        "stage_weight02",
+        "stage_jump05"
+      ]
+    }
+  ]
+}

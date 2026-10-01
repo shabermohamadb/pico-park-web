@@ -1,0 +1,23 @@
+{
+  "name": "pico-park-web",
+  "version": "1.0.0",
+  "description": "Authentic web-based real-time multiplayer conversion of PICO PARK",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node test/integration_test.js"
+  },
+  "keywords": [
+    "pico-park",
+    "multiplayer",
+    "game",
+    "websocket",
+    "canvas"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}
