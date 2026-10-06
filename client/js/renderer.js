@@ -20,6 +20,7 @@ class GameRenderer {
     this.particles = [];
     this.emotes = []; // { playerId, text, expiresAt }
     this.cachedTiles = new Map();
+    this.showDebugOverlay = false;
 
     this.loadAssets();
   }
@@ -120,7 +121,7 @@ class GameRenderer {
     }
   }
 
-  render(stage, snapshot, localPlayerId, dt = 0.016) {
+  render(stage, snapshot, localPlayerId, dt = 0.016, perfMetrics = null) {
     const ctx = this.ctx;
 
     this.updateParticles(dt);
@@ -187,7 +188,7 @@ class GameRenderer {
     ctx.restore();
 
     // 9. Render HUD & Overlays in screen space
-    this.renderHUD(stage, snapshot, localPlayerId);
+    this.renderHUD(stage, snapshot, localPlayerId, perfMetrics);
   }
 
   renderTilemap(stage) {
@@ -563,7 +564,7 @@ class GameRenderer {
     ctx.globalAlpha = 1.0;
   }
 
-  renderHUD(stage, snapshot, localPlayerId) {
+  renderHUD(stage, snapshot, localPlayerId, perfMetrics = null) {
     const ctx = this.ctx;
 
     // Top Header Bar
@@ -606,6 +607,76 @@ class GameRenderer {
         ctx.fillText("KEY: REQUIRED ✗", this.width - 24, 21);
       }
     }
+
+    // Performance Monitor HUD Overlay (Toggle with F3)
+    if (this.showDebugOverlay && perfMetrics) {
+      this.renderPerformanceHUD(perfMetrics);
+    }
+  }
+
+  renderPerformanceHUD(metrics) {
+    const ctx = this.ctx;
+    const x = 16;
+    const y = 50;
+    const w = 210;
+    const h = 118;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(x, y, w, h, 6);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+
+    // Header
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillText("PERFORMANCE MONITOR (F3)", x + 10, y + 8);
+
+    // FPS
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("Client FPS:", x + 10, y + 28);
+    const fps = metrics.fps || 60;
+    ctx.fillStyle = fps >= 55 ? "#4ade80" : fps >= 30 ? "#facc15" : "#f87171";
+    ctx.fillText(`${fps} FPS`, x + 120, y + 28);
+
+    // Ping
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("Latency (RTT):", x + 10, y + 46);
+    const ping = metrics.ping !== undefined ? metrics.ping : 0;
+    ctx.fillStyle = ping <= 50 ? "#4ade80" : ping <= 120 ? "#facc15" : "#f87171";
+    ctx.fillText(`${ping} ms`, x + 120, y + 46);
+
+    // Server Tick Duration
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("Server Tick:", x + 10, y + 64);
+    const tickMs = metrics.serverTickDuration !== undefined ? metrics.serverTickDuration : 0;
+    ctx.fillStyle = tickMs <= 5 ? "#4ade80" : tickMs <= 12 ? "#facc15" : "#f87171";
+    ctx.fillText(`${tickMs} ms`, x + 120, y + 64);
+
+    // Network updates
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("Net Inflow:", x + 10, y + 82);
+    const netRate = metrics.updatesPerSecond !== undefined ? metrics.updatesPerSecond : 30;
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fillText(`${netRate} pkt/s`, x + 120, y + 82);
+
+    // Local prediction status
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("Prediction:", x + 10, y + 98);
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillText(metrics.predictionActive ? "0ms ACTIVE" : "OFF", x + 120, y + 98);
+
+    ctx.restore();
   }
 }
 

@@ -157,6 +157,26 @@ class InputHandler {
     this.playerStates.clear();
   }
 
+  getInputForPlayer(playerId) {
+    for (const [slot, id] of this.localPlayers.entries()) {
+      if (id === playerId) {
+        return this.playerStates.get(slot) || { left: false, right: false, jump: false, action: false };
+      }
+    }
+    return { left: false, right: false, jump: false, action: false };
+  }
+
+  getInputStatesMap() {
+    const map = new Map();
+    for (const [slot, id] of this.localPlayers.entries()) {
+      const state = this.playerStates.get(slot);
+      if (state) {
+        map.set(id, { ...state });
+      }
+    }
+    return map;
+  }
+
   bindEvents() {
     window.addEventListener("keydown", (e) => {
       // Don't capture inputs if user is typing in a text field

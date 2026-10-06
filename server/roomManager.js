@@ -177,7 +177,9 @@ class Room {
   tick(dt) {
     if (this.state !== CONSTANTS.ROOM_STATE.PLAYING || !this.physicsWorld) return;
 
+    const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
     this.physicsWorld.step(dt);
+    this.lastTickDuration = (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0;
 
     // Check for level clear event
     if (this.physicsWorld.levelCompleted && this.state === CONSTANTS.ROOM_STATE.PLAYING) {
@@ -255,6 +257,9 @@ class Room {
     if (!this.physicsWorld) return;
 
     const snapshot = this.physicsWorld.getSnapshot();
+    if (this.lastTickDuration !== undefined) {
+      snapshot.tickDuration = Math.round(this.lastTickDuration * 100) / 100;
+    }
     this.broadcast({
       type: CONSTANTS.MSG.GAME_SNAPSHOT,
       snapshot

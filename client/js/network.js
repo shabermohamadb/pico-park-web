@@ -1,4 +1,4 @@
-// PICO PARK Web Network Client with Snapshot Interpolation
+// PICO PARK Web Network Client with Snapshot Interpolation & Latency Tracking
 
 class NetworkClient {
   constructor(callbacks = {}) {
@@ -11,6 +11,14 @@ class NetworkClient {
     // Snapshot interpolation buffer
     this.snapshots = [];
     this.interpolationDelay = 60; // 60ms buffer for smooth interpolation
+
+    // Latency & performance telemetry
+    this.ping = 0;
+    this.serverTickDuration = 0;
+    this.pingInterval = null;
+    this.recentPackets = 0;
+    this.updatesPerSecond = 0;
+    this.lastPacketRateCheck = typeof performance !== "undefined" ? performance.now() : Date.now();
   }
 
   connect() {
@@ -29,6 +37,7 @@ class NetworkClient {
         this.connected = true;
         this.reconnectAttempts = 0;
         console.log(`[Network] Connected to PICO PARK server at ${wsUrl}`);
+        this.startPingLoop();
         if (this.callbacks.onConnected) this.callbacks.onConnected();
       };
 
@@ -43,6 +52,7 @@ class NetworkClient {
 
       this.ws.onclose = () => {
         this.connected = false;
+        this.stopPingLoop();
         console.warn("[Network] Connection closed");
         if (this.callbacks.onDisconnect) this.callbacks.onDisconnect();
       };
@@ -55,13 +65,34 @@ class NetworkClient {
     }
   }
 
+  startPingLoop() {
+    this.stopPingLoop();
+    this.pingInterval = setInterval(() => {
+      if (this.connected && this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const clientTime = typeof performance !== "undefined" ? performance.now() : Date.now();
+        this.send("ping", { clientTime });
+      }
+    }, 1500);
+  }
+
+  stopPingLoop() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
   send(type, payload = {}) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
         // Wait for connection to open then send
-        this.ws.addEventListener("open", () => {
-          this.ws.send(JSON.stringify({ type, ...payload }));
-        }, { once: true });
+        this.ws.addEventListener(
+          "open",
+          () => {
+            this.ws.send(JSON.stringify({ type, ...payload }));
+          },
+          { once: true }
+        );
         return;
       }
       console.warn("[Network] Socket not open. State:", this.ws ? this.ws.readyState : "null");
@@ -107,9 +138,20 @@ class NetworkClient {
 
   handleMessage(msg) {
     switch (msg.type) {
+      case "pong":
+        if (msg.clientTime !== undefined) {
+          const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+          this.ping = Math.round(now - msg.clientTime);
+        }
+        if (msg.serverTickDuration !== undefined) {
+          this.serverTickDuration = msg.serverTickDuration;
+        }
+        break;
+
       case CONSTANTS.MSG.ROOM_CREATED:
       case CONSTANTS.MSG.ROOM_JOINED:
-        this.localPlayerId = msg.playerId ||
+        this.localPlayerId =
+          msg.playerId ||
           msg.room.players.find((p) => p.isHost && msg.type === CONSTANTS.MSG.ROOM_CREATED)?.id ||
           msg.room.players[msg.room.players.length - 1].id;
         if (this.callbacks.onRoomJoined) this.callbacks.onRoomJoined(msg.room, this.localPlayerId);
@@ -154,6 +196,21 @@ class NetworkClient {
   }
 
   addSnapshot(snap) {
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    snap.clientReceiveTime = now;
+
+    if (snap.tickDuration !== undefined) {
+      this.serverTickDuration = snap.tickDuration;
+    }
+
+    // Packet frequency monitor
+    this.recentPackets++;
+    if (now - this.lastPacketRateCheck >= 1000) {
+      this.updatesPerSecond = Math.round((this.recentPackets * 1000) / (now - this.lastPacketRateCheck));
+      this.recentPackets = 0;
+      this.lastPacketRateCheck = now;
+    }
+
     // Process server events (sounds, triggers)
     if (snap.events && snap.events.length > 0) {
       for (const ev of snap.events) {
@@ -178,39 +235,13 @@ class NetworkClient {
     }
 
     this.snapshots.push(snap);
-    // Keep last 15 snapshots (~0.5s of history)
-    if (this.snapshots.length > 15) {
+    // Keep last 20 snapshots (~0.6s of history)
+    if (this.snapshots.length > 20) {
       this.snapshots.shift();
     }
   }
 
-  // Linear interpolation for smooth 60fps rendering
-  getInterpolatedState() {
-    if (this.snapshots.length === 0) return null;
-    if (this.snapshots.length === 1) return this.snapshots[0];
-
-    const renderTime = Date.now() - this.interpolationDelay;
-
-    // Find the two surrounding snapshots: s0 <= renderTime <= s1
-    let s0 = null;
-    let s1 = null;
-
-    for (let i = 0; i < this.snapshots.length - 1; i++) {
-      if (this.snapshots[i].t <= renderTime && renderTime <= this.snapshots[i + 1].t) {
-        s0 = this.snapshots[i];
-        s1 = this.snapshots[i + 1];
-        break;
-      }
-    }
-
-    if (!s0 || !s1) {
-      // Extrapolate to latest snapshot
-      return this.snapshots[this.snapshots.length - 1];
-    }
-
-    const duration = s1.t - s0.t;
-    const alpha = duration > 0 ? (renderTime - s0.t) / duration : 1.0;
-
+  interpolateTwoSnapshots(s0, s1, alpha) {
     // Interpolate players
     const interpolatedPlayers = [];
     const p1Map = new Map((s1.players || []).map((p) => [p.id, p]));
@@ -255,17 +286,18 @@ class NetworkClient {
         if (overlapX > 0.001 && overlapY > 0.001) {
           if (overlapX < overlapY) {
             const pushDir = p.x < b.x ? -1 : 1;
-            p.x = b.x + pushDir * (pW + b.w) / 2;
+            p.x = b.x + pushDir * ((pW + b.w) / 2);
           } else {
             const pushDir = p.y < b.y ? -1 : 1;
-            p.y = b.y + pushDir * (pH + b.h) / 2;
+            p.y = b.y + pushDir * ((pH + b.h) / 2);
           }
         }
       }
     }
 
     return {
-      t: renderTime,
+      t: s1.t,
+      clientReceiveTime: s1.clientReceiveTime,
       stageState: s1.stageState,
       players: interpolatedPlayers,
       boxes: interpolatedBoxes,
@@ -275,6 +307,49 @@ class NetworkClient {
       goal: s1.goal,
       events: []
     };
+  }
+
+  // Linear interpolation using monotonic client receive timestamps
+  // Completely eliminates clock drift between Render server and browser client
+  getInterpolatedState() {
+    if (this.snapshots.length === 0) return null;
+    if (this.snapshots.length === 1) return this.snapshots[0];
+
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const renderTime = now - this.interpolationDelay;
+
+    // Find the two surrounding snapshots: s0 <= renderTime <= s1
+    let s0 = null;
+    let s1 = null;
+
+    for (let i = 0; i < this.snapshots.length - 1; i++) {
+      const t0 = this.snapshots[i].clientReceiveTime;
+      const t1 = this.snapshots[i + 1].clientReceiveTime;
+      if (t0 <= renderTime && renderTime <= t1) {
+        s0 = this.snapshots[i];
+        s1 = this.snapshots[i + 1];
+        break;
+      }
+    }
+
+    if (!s0 || !s1) {
+      const latest = this.snapshots[this.snapshots.length - 1];
+      if (renderTime > latest.clientReceiveTime && this.snapshots.length >= 2) {
+        const prev = this.snapshots[this.snapshots.length - 2];
+        const span = latest.clientReceiveTime - prev.clientReceiveTime;
+        if (span > 0) {
+          const extra = Math.min(renderTime - latest.clientReceiveTime, 50);
+          const alphaExtrap = Math.min(extra / span, 1.0);
+          return this.interpolateTwoSnapshots(prev, latest, 1.0 + alphaExtrap * 0.5);
+        }
+      }
+      return latest;
+    }
+
+    const duration = s1.clientReceiveTime - s0.clientReceiveTime;
+    const alpha = duration > 0 ? (renderTime - s0.clientReceiveTime) / duration : 1.0;
+
+    return this.interpolateTwoSnapshots(s0, s1, alpha);
   }
 }
 

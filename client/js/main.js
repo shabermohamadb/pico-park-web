@@ -11,6 +11,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastLobbyPlayerCount = 0;
   let lastFrameTime = performance.now();
 
+  // Initialize Client-side Prediction Engine (0ms local movement latency)
+  const predictor = new ClientPredictor();
+  window.predictor = predictor;
+
   // Initialize Network Client
   const network = new NetworkClient({
     onConnected: () => {
@@ -24,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const me = room.players.find((p) => p.id === playerId);
         window.inputHandler.registerLocalPlayer(me ? me.slot : 1, playerId);
       }
+      predictor.reset();
       UIManager.showScreen("lobby");
       UIManager.updateLobby(room, localPlayerId);
       AudioManager.playBGM("title_bgm");
@@ -52,6 +57,13 @@ document.addEventListener("DOMContentLoaded", () => {
       currentStage = stage;
       isGameActive = true;
       isLevelClearing = false;
+      predictor.reset();
+      if (window.inputHandler && stage.actors && stage.actors.spawns) {
+        for (const [slot, id] of window.inputHandler.localPlayers.entries()) {
+          const spawn = stage.actors.spawns[slot - 1] || stage.actors.spawns[0] || { x: 100, y: 400 };
+          predictor.registerPlayer(id, slot, spawn.x, spawn.y);
+        }
+      }
       UIManager.showScreen("game");
       UIManager.hideLevelClear();
       renderer.particles = [];
@@ -69,6 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
     onNextLevel: (stage) => {
       currentStage = stage;
       isLevelClearing = false;
+      predictor.reset();
+      if (window.inputHandler && stage.actors && stage.actors.spawns) {
+        for (const [slot, id] of window.inputHandler.localPlayers.entries()) {
+          const spawn = stage.actors.spawns[slot - 1] || stage.actors.spawns[0] || { x: 100, y: 400 };
+          predictor.registerPlayer(id, slot, spawn.x, spawn.y);
+        }
+      }
       UIManager.hideLevelClear();
       renderer.particles = [];
       AudioManager.playBGM("bgm");
@@ -85,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     onDisconnect: () => {
       isGameActive = false;
+      predictor.reset();
       if (window.inputHandler) {
         window.inputHandler.clearLocalPlayers();
       }
@@ -276,6 +296,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // F3 shortcut for Performance Monitor HUD toggle
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "F3" || e.code === "F3") {
+      e.preventDefault();
+      renderer.showDebugOverlay = !renderer.showDebugOverlay;
+    }
+  });
+
   // Quick Emote bar clicks
   document.querySelectorAll(".emote-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -287,13 +315,78 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Render & Game Loop
+  let frameCount = 0;
+  let lastFpsCalc = performance.now();
+  let currentFps = 60;
+
   function gameLoop(now) {
     const dt = Math.min((now - lastFrameTime) / 1000.0, 0.1);
     lastFrameTime = now;
 
+    frameCount++;
+    if (now - lastFpsCalc >= 1000) {
+      currentFps = Math.round((frameCount * 1000) / (now - lastFpsCalc));
+      frameCount = 0;
+      lastFpsCalc = now;
+    }
+
     if (isGameActive && currentStage) {
       const snapshot = network.getInterpolatedState();
-      renderer.render(currentStage, snapshot, localPlayerId, dt);
+
+      if (snapshot) {
+        // Reconcile predictor with authoritative snapshot
+        if (snapshot.players && snapshot.players.length > 0) {
+          if (window.inputHandler) {
+            for (const [slot, id] of window.inputHandler.localPlayers.entries()) {
+              if (!predictor.localPlayers.has(id)) {
+                const authP = snapshot.players.find((p) => p.id === id);
+                if (authP) {
+                  predictor.registerPlayer(id, slot, authP.x, authP.y);
+                }
+              }
+            }
+          }
+          predictor.reconcile(snapshot.players);
+        }
+
+        // Run local prediction simulation step
+        const inputStates = window.inputHandler ? window.inputHandler.getInputStatesMap() : new Map();
+        predictor.update(currentStage, snapshot.boxes, inputStates, dt);
+
+        // Replace local player(s) in snapshot with client predicted positions
+        const renderPlayers = (snapshot.players || []).map((p) => {
+          if (predictor.localPlayers.has(p.id)) {
+            const pred = predictor.getRenderPlayer(p.id);
+            if (pred) {
+              return {
+                ...p,
+                x: pred.x,
+                y: pred.y,
+                vx: pred.vx,
+                vy: pred.vy,
+                facing: pred.facing,
+                anim: pred.animState
+              };
+            }
+          }
+          return p;
+        });
+
+        const renderSnapshot = {
+          ...snapshot,
+          players: renderPlayers
+        };
+
+        const perfMetrics = {
+          fps: currentFps,
+          ping: network.ping,
+          serverTickDuration: network.serverTickDuration,
+          updatesPerSecond: network.updatesPerSecond,
+          predictionActive: predictor.localPlayers.size > 0
+        };
+
+        renderer.render(currentStage, renderSnapshot, localPlayerId, dt, perfMetrics);
+      }
     }
 
     requestAnimationFrame(gameLoop);

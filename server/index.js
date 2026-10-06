@@ -3,6 +3,7 @@
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const compression = require("compression");
 const { WebSocketServer } = require("ws");
 const CONSTANTS = require("../shared/constants");
 const roomManager = require("./roomManager");
@@ -10,12 +11,18 @@ const roomManager = require("./roomManager");
 const app = express();
 let PORT = parseInt(process.env.PORT, 10) || 3001;
 
-// Serve static client assets
+// Production reverse proxy support (Render, Railway, etc.)
+app.set("trust proxy", 1);
+
+// Enable gzip/brotli HTTP compression
+app.use(compression());
+
+// Serve static client assets with caching headers
 const clientPath = path.join(__dirname, "../client");
 const sharedPath = path.join(__dirname, "../shared");
 
-app.use(express.static(clientPath));
-app.use("/shared", express.static(sharedPath));
+app.use(express.static(clientPath, { maxAge: "1d", etag: true }));
+app.use("/shared", express.static(sharedPath, { maxAge: "1d", etag: true }));
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -211,6 +218,22 @@ function handleClientMessage(ws, playerId, msg) {
       roomManager.removePlayer(playerId);
       break;
     }
+
+    case "ping": {
+      const code = roomManager.playerRooms.get(playerId);
+      const room = code ? roomManager.getRoom(code) : null;
+      const st = room ? (room.lastTickDuration || 1) : 1;
+      const clientTime = msg.clientTime !== undefined ? msg.clientTime : msg.t;
+      ws.send(JSON.stringify({
+        type: "pong",
+        clientTime,
+        t: clientTime,
+        serverTime: Date.now(),
+        serverTickDuration: Math.round(st * 100) / 100,
+        st: Math.round(st * 100) / 100
+      }));
+      break;
+    }
   }
 }
 
@@ -231,12 +254,23 @@ server.on("error", (err) => {
   if (err.code === "EADDRINUSE") {
     console.warn(`[PICO PARK Web] Port ${PORT} busy, trying ${PORT + 1}...`);
     PORT += 1;
-    server.listen(PORT);
+    server.listen(PORT, "0.0.0.0");
   } else {
     console.error("Server error:", err);
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`[PICO PARK Web] Server listening on http://localhost:${PORT}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`[PICO PARK Web] Server listening on http://0.0.0.0:${PORT}`);
 });
+
+function gracefulShutdown() {
+  clearInterval(pingInterval);
+  wss.close(() => {
+    server.close(() => {
+      process.exit(0);
+    });
+  });
+}
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
