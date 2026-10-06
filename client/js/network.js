@@ -93,8 +93,12 @@ class NetworkClient {
     this.send(CONSTANTS.MSG.RESTART_LEVEL);
   }
 
-  sendInput(inputs) {
-    this.send(CONSTANTS.MSG.PLAYER_INPUT, { inputs });
+  addLocalPlayer(name = null) {
+    this.send(CONSTANTS.MSG.ADD_LOCAL_PLAYER, { name });
+  }
+
+  sendInput(inputs, targetPlayerId = null) {
+    this.send(CONSTANTS.MSG.PLAYER_INPUT, { inputs, targetPlayerId });
   }
 
   sendEmote(emote) {
@@ -109,6 +113,12 @@ class NetworkClient {
           msg.room.players.find((p) => p.isHost && msg.type === CONSTANTS.MSG.ROOM_CREATED)?.id ||
           msg.room.players[msg.room.players.length - 1].id;
         if (this.callbacks.onRoomJoined) this.callbacks.onRoomJoined(msg.room, this.localPlayerId);
+        break;
+
+      case CONSTANTS.MSG.LOCAL_PLAYER_ADDED:
+        if (this.callbacks.onLocalPlayerAdded) {
+          this.callbacks.onLocalPlayerAdded(msg.playerId, msg.slot);
+        }
         break;
 
       case CONSTANTS.MSG.ROOM_STATE:
@@ -147,10 +157,21 @@ class NetworkClient {
     // Process server events (sounds, triggers)
     if (snap.events && snap.events.length > 0) {
       for (const ev of snap.events) {
+        if (ev.id) {
+          if (!this.seenEventIds) this.seenEventIds = new Set();
+          if (this.seenEventIds.has(ev.id)) continue;
+          this.seenEventIds.add(ev.id);
+          if (this.seenEventIds.size > 500) {
+            const it = this.seenEventIds.values();
+            for (let i = 0; i < 200; i++) {
+              this.seenEventIds.delete(it.next().value);
+            }
+          }
+        }
         if (ev.type === "sound" && window.AudioManager) {
           // Do not play win/fanfare here - level clear is authoritatively handled by onLevelClear
           if (ev.name !== "win" && ev.name !== "fanf01" && ev.name !== "fanf02") {
-            window.AudioManager.playSFX(ev.name);
+            window.AudioManager.playSFX(ev.name, ev.id);
           }
         }
       }
@@ -224,8 +245,28 @@ class NetworkClient {
       }
     }
 
+    // Client-side visual de-penetration clamp: ensure interpolated players never visually overlap boxes
+    const pW = (typeof CONSTANTS !== "undefined" && CONSTANTS.PLAYER_WIDTH) || 42;
+    const pH = (typeof CONSTANTS !== "undefined" && CONSTANTS.PLAYER_HEIGHT) || 46;
+    for (const p of interpolatedPlayers) {
+      for (const b of interpolatedBoxes) {
+        const overlapX = (pW + b.w) / 2 - Math.abs(p.x - b.x);
+        const overlapY = (pH + b.h) / 2 - Math.abs(p.y - b.y);
+        if (overlapX > 0.001 && overlapY > 0.001) {
+          if (overlapX < overlapY) {
+            const pushDir = p.x < b.x ? -1 : 1;
+            p.x = b.x + pushDir * (pW + b.w) / 2;
+          } else {
+            const pushDir = p.y < b.y ? -1 : 1;
+            p.y = b.y + pushDir * (pH + b.h) / 2;
+          }
+        }
+      }
+    }
+
     return {
       t: renderTime,
+      stageState: s1.stageState,
       players: interpolatedPlayers,
       boxes: interpolatedBoxes,
       switches: s1.switches,
@@ -237,4 +278,9 @@ class NetworkClient {
   }
 }
 
-window.NetworkClient = NetworkClient;
+if (typeof window !== "undefined") {
+  window.NetworkClient = NetworkClient;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = NetworkClient;
+}

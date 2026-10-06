@@ -12,9 +12,12 @@ const testLevel = {
   chipSize: 32,
   scale: 1,
   grid: Array.from({ length: 20 }, (_, y) =>
-    Array.from({ length: 30 }, (_, x) => (y >= 15 ? 1 : 0))
+    Array.from({ length: 30 }, (_, x) =>
+      y >= 15 ? CONSTANTS.TILES.MC_BLK : CONSTANTS.TILES.MC_NON
+    )
   ),
   actors: {
+    players: [{ x: 200, y: 450 }],
     doors: [],
     keys: [],
     switches: [],
@@ -91,6 +94,34 @@ console.log(`  Rider P2 vy=${p2.vy}, ridingOn=${p2.ridingOn}`);
 assert(p2.vy < 0, "Rider should jump upwards");
 assert.strictEqual(p2.ridingOn, null, "Rider should no longer be riding on carrier after jumping");
 console.log("  -> SUCCESS: Jumping cleanly detaches rider!");
+
+// 6. Test Box Rider: Player standing on box when box is pushed
+const testBox = {
+  id: "box_test",
+  x: 500,
+  y: 15 * 32 - 16, // box centered at Y=464, h=32, w=32
+  w: 32,
+  h: 32,
+  vx: 0,
+  vy: 0,
+  weight: 1,
+  onGround: true
+};
+world.boxes.push(testBox);
+
+const boxRider = world.addPlayer("player4", "BoxRider", 4);
+boxRider.x = 500;
+boxRider.y = testBox.y - testBox.h / 2 - boxRider.h / 2; // 464 - 16 - 23 = 425
+boxRider.onGround = true;
+boxRider.ridingOn = testBox.id;
+boxRider.vy = 0;
+
+// Move box directly via moveBoxRiders
+world.moveBoxRiders(testBox.id, 50);
+console.log("[Test 5] Box Rider Momentum Transfer:");
+console.log(`  Box Rider X=${boxRider.x}`);
+assert.strictEqual(boxRider.x, 550, "Box rider should have moved by 50px along with the box");
+console.log("  -> SUCCESS: Box rider moved with box!");
 
 console.log("\n=======================================================");
 console.log("  ALL STACK CARRYING TESTS PASSED SUCCESSFULLY!        ");

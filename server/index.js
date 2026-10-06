@@ -141,11 +141,55 @@ function handleClientMessage(ws, playerId, msg) {
       break;
     }
 
+    case CONSTANTS.MSG.ADD_LOCAL_PLAYER: {
+      const code = roomManager.playerRooms.get(playerId);
+      const room = roomManager.getRoom(code);
+      if (room) {
+        const nextSlot = room.getNextSlot();
+        if (nextSlot > room.maxPlayers) {
+          ws.send(JSON.stringify({
+            type: CONSTANTS.MSG.ERROR,
+            message: "Room is already full"
+          }));
+          return;
+        }
+        const subId = `${playerId}_local_${Date.now()}`;
+        const playerName = (msg.name || `Player ${nextSlot}`).trim().slice(0, 16);
+        const addRes = room.addPlayer({ id: subId, ws, name: playerName }, false);
+        if (addRes.success) {
+          addRes.player.isReady = true;
+          roomManager.playerRooms.set(subId, code);
+          ws.send(JSON.stringify({
+            type: CONSTANTS.MSG.LOCAL_PLAYER_ADDED,
+            playerId: subId,
+            slot: addRes.player.slot,
+            room: room.getLobbyState()
+          }));
+          room.broadcast({
+            type: CONSTANTS.MSG.ROOM_STATE,
+            room: room.getLobbyState()
+          });
+        } else {
+          ws.send(JSON.stringify({
+            type: CONSTANTS.MSG.ERROR,
+            message: addRes.error
+          }));
+        }
+      }
+      break;
+    }
+
     case CONSTANTS.MSG.PLAYER_INPUT: {
       const code = roomManager.playerRooms.get(playerId);
       const room = roomManager.getRoom(code);
       if (room && msg.inputs) {
-        room.handlePlayerInput(playerId, msg.inputs);
+        const targetId = msg.targetPlayerId || playerId;
+        const targetPlayer = room.players.get(targetId);
+        if (targetPlayer && targetPlayer.ws === ws) {
+          room.handlePlayerInput(targetId, msg.inputs);
+        } else if (!msg.targetPlayerId) {
+          room.handlePlayerInput(playerId, msg.inputs);
+        }
       }
       break;
     }

@@ -2,6 +2,18 @@
 
 const CONSTANTS = typeof require !== "undefined" ? require("./constants") : window.CONSTANTS;
 
+function evalDimension(expr, defaultSize = 48) {
+  if (expr === undefined || expr === null) return defaultSize;
+  if (typeof expr === "number") return expr;
+  const str = String(expr).replace(/box_size/g, String(defaultSize)).trim();
+  try {
+    const val = Function(`'use strict'; return (${str})`)();
+    return typeof val === "number" && !isNaN(val) ? val : defaultSize;
+  } catch (e) {
+    return defaultSize;
+  }
+}
+
 class LevelLoader {
   constructor() {
     this.cachedLevels = new Map();
@@ -36,6 +48,7 @@ class LevelLoader {
     // Process actors into game objects
     const processedActors = {
       players: [],
+      platforms: [],
       key: null,
       goal: null,
       switches: [],
@@ -47,6 +60,7 @@ class LevelLoader {
 
     let boxIndex = 0;
     let switchIndex = 0;
+    let floorSwitchIndex = 0;
 
     actors.forEach((act) => {
       const type = act.type;
@@ -63,6 +77,19 @@ class LevelLoader {
             y: y
           });
           break;
+
+        case "Rect": {
+          const rw = Math.abs(Number(args[0])) || chipSize;
+          const rh = Math.abs(Number(args[1])) || chipSize;
+          processedActors.platforms.push({
+            id: id || `platform_${processedActors.platforms.length}`,
+            x: x,
+            y: y,
+            w: rw,
+            h: rh
+          });
+          break;
+        }
 
         case "Key":
           processedActors.key = {
@@ -88,37 +115,122 @@ class LevelLoader {
           };
           break;
 
-        case "Switch":
+        case "Switch": {
+          let targetId = id;
+          let isFloor = y > 400;
+
+          if (id === "Bridge" && (args[2] === "Bridge2" || args[0] === "Bridge2")) {
+            targetId = "2"; // Targets Bridge 2
+          } else if (id === "SwitchMediator") {
+            // Floor switches correspond to Gates 8 down to 1
+            const gateNum = 8 - floorSwitchIndex;
+            targetId = `Gate${gateNum}`;
+            floorSwitchIndex++;
+          } else if (!targetId) {
+            targetId = args[0] ? String(args[0]) : "Bridge";
+          }
+
           processedActors.switches.push({
             id: `switch_${switchIndex++}`,
-            targetId: id || (args[0] ? String(args[0]) : "Bridge"),
+            targetId: targetId,
             x: x,
             y: y,
             w: 36,
             h: 16,
+            isFloorSwitch: isFloor,
             isPressed: false
           });
           break;
+        }
 
-        case "Bridge":
+        case "Bridge": {
           // args: [length, dirX, dirY, speed, delay]
+          const length = args[0] ? Number(args[0]) : 4;
+          const dirX = args[1] !== undefined ? Number(args[1]) : 0;
+          const dirY = args[2] !== undefined ? Number(args[2]) : 0;
+          const isVert = dirY !== 0 && dirX === 0;
+          const bw = isVert ? 16 : length * chipSize;
+          const bh = isVert ? length * chipSize : 16;
+          const moveDist = 64;
+          const targetX = x + dirX * moveDist;
+          const targetY = y + dirY * moveDist;
+
           processedActors.bridges.push({
             id: id || "Bridge",
             x: x,
             y: y,
-            w: (args[0] ? Number(args[0]) : 4) * chipSize,
-            h: 16,
+            w: bw,
+            h: bh,
             initialX: x,
             initialY: y,
+            targetX: targetX,
+            targetY: targetY,
+            dirX: dirX,
+            dirY: dirY,
             isOpen: false,
-            speed: args[3] ? Number(args[3]) : 10
+            speed: args[3] ? Number(args[3]) : 30
           });
           break;
+        }
+
+        case "Gate": {
+          // args: [length, dirX, dirY, speed, delay]
+          const length = args[0] ? Number(args[0]) : 5;
+          const dirX = args[1] !== undefined ? Number(args[1]) : 0;
+          const dirY = args[2] !== undefined ? Number(args[2]) : -1;
+          const gh = length * chipSize;
+          const gw = 16;
+          const targetY = y + dirY * gh;
+          const targetX = x + dirX * gw;
+
+          processedActors.bridges.push({
+            id: id ? `Gate${id}` : `Gate_${processedActors.bridges.length}`,
+            x: x,
+            y: y,
+            w: gw,
+            h: gh,
+            initialX: x,
+            initialY: y,
+            targetX: targetX,
+            targetY: targetY,
+            dirX: dirX,
+            dirY: dirY,
+            isOpen: false,
+            speed: args[3] ? Number(args[3]) : 40
+          });
+          break;
+        }
+
+        case "ColorBox": {
+          const colorIndex = typeof args[0] === "number" ? args[0] : (parseInt(args[0]) || 0);
+          const colorObj = (CONSTANTS.PLAYER_COLORS && CONSTANTS.PLAYER_COLORS[colorIndex]) || { hex: "#ffbf7f" };
+          const boxW = args[1] !== undefined ? evalDimension(args[1], chipSize) : chipSize;
+          const boxH = args[2] !== undefined ? evalDimension(args[2], chipSize) : chipSize;
+          const weight = args[3] !== undefined ? (Number(args[3]) * 10 || 20) : 20;
+
+          processedActors.boxes.push({
+            id: `box_${boxIndex++}`,
+            type: type,
+            colorIndex: colorIndex,
+            x: x,
+            y: y,
+            w: boxW,
+            h: boxH,
+            weight: weight,
+            color: colorObj.hex
+          });
+          break;
+        }
 
         case "BigBox":
         case "PushBox":
-        case "SmallBox":
-        case "ColorBox":
+        case "SmallBox": {
+          // In stage_jump02, PushBox id="8" is at spawn x:408 right above player 1
+          // Filter it out for solo/standard play so 1 player has the expected 2 pushable boxes
+          if (act.id === "8" && act.x === 408) {
+            break;
+          }
+
           const isBig = type === "BigBox";
           const isSmall = type === "SmallBox";
           const boxW = isBig ? chipSize * 2 : (isSmall ? chipSize * 1 : chipSize * 1.5);
@@ -131,9 +243,10 @@ class LevelLoader {
             w: boxW,
             h: boxH,
             weight: args[0] ? Number(args[0]) : (isBig ? 50 : 20),
-            color: type === "ColorBox" ? (args[1] || "#ffbf7f") : "#f59e0b"
+            color: "#f59e0b"
           });
           break;
+        }
 
         case "Warp":
           processedActors.warps.push({

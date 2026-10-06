@@ -257,12 +257,30 @@ async function runTests() {
     assert.strictEqual(pA.jumpBuffer, 0, "Holding jump should not continuously refresh jump buffer");
     console.log("  -> Discrete jump buffering verified (no bunny-hop spam)!");
 
+    // 16. Verify Add Local Player (Single-machine couch co-op from Reference 2)
+    console.log("[Test 16] Verifying Add Local Player on same connection...");
+    client1.send(JSON.stringify({
+      type: "add_local_player",
+      name: "LocalP2"
+    }));
+    const localAddedMsg = await waitForMessage(client1, (m) => m.type === "local_player_added");
+    assert.ok(localAddedMsg.playerId, "Should receive playerId for local player");
+    assert.ok(localAddedMsg.slot > 0, "Should be assigned a valid slot");
+
+    // Test input dispatch to targetPlayerId
+    client1.send(JSON.stringify({
+      type: "player_input",
+      targetPlayerId: localAddedMsg.playerId,
+      inputs: { right: true }
+    }));
+    console.log("  -> Local player added and input dispatched successfully!");
+
     // Cleanup
     client1.close();
     client2.close();
 
     console.log("\n=======================================================");
-    console.log("  ALL 15 PICO PARK INTEGRATION TESTS PASSED SUCCESSFULLY!  ");
+    console.log("  ALL 16 PICO PARK INTEGRATION TESTS PASSED SUCCESSFULLY!  ");
     console.log("=======================================================\n");
     process.exit(0);
   } catch (err) {

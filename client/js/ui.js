@@ -117,16 +117,97 @@ class UIManagerEngine {
   openSettings() {
     if (this.settingsModal) {
       this.settingsModal.classList.remove("hidden");
+      this.renderControls(this.selectedPlayerTab || 1);
     }
   }
 
   closeSettings() {
     if (this.settingsModal) {
+      if (window.inputHandler) {
+        window.inputHandler.cancelRebind();
+      }
       this.settingsModal.classList.add("hidden");
     }
   }
 
+  renderControls(playerNum = 1) {
+    this.selectedPlayerTab = playerNum;
+    const container = document.getElementById("controls-bindings-list");
+    if (!container) return;
+
+    const handler = window.inputHandler;
+    const bindings = handler ? handler.getBindings(playerNum) : null;
+    if (!bindings) return;
+
+    const actions = [
+      { key: "left", label: "Move Left" },
+      { key: "right", label: "Move Right" },
+      { key: "jump", label: "Jump" },
+      { key: "action", label: "Down / Action" }
+    ];
+
+    container.innerHTML = "";
+    actions.forEach((act) => {
+      const row = document.createElement("div");
+      row.className = "controls-binding-row";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.textContent = act.label;
+
+      const btn = document.createElement("button");
+      btn.className = "controls-binding-btn";
+      btn.setAttribute("data-action", act.key);
+
+      const currentKeys = bindings[act.key] || [];
+      const formattedKeys = currentKeys.map((k) => window.InputHandler.formatKeyName(k)).join(" / ");
+      btn.textContent = formattedKeys || "UNBOUND";
+
+      btn.addEventListener("click", () => {
+        if (!window.inputHandler) return;
+        btn.textContent = "PRESS KEY...";
+        btn.classList.add("rebinding");
+
+        window.inputHandler.startRebind(playerNum, act.key, (newCode, cancelled) => {
+          btn.classList.remove("rebinding");
+          this.renderControls(playerNum);
+          if (!cancelled && newCode) {
+            this.showToast(`Bound ${act.label} to ${window.InputHandler.formatKeyName(newCode)}`, "success");
+          }
+        });
+      });
+
+      row.appendChild(labelSpan);
+      row.appendChild(btn);
+      container.appendChild(row);
+    });
+  }
+
+  initControlsUI() {
+    const tabs = document.querySelectorAll("#player-tab-bar .player-tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        const pNum = parseInt(tab.getAttribute("data-player"), 10) || 1;
+        this.renderControls(pNum);
+      });
+    });
+
+    const resetBtn = document.getElementById("btn-reset-controls");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        if (window.inputHandler) {
+          window.inputHandler.resetToDefaults();
+          this.renderControls(this.selectedPlayerTab || 1);
+          this.showToast("All controls reset to defaults", "info");
+        }
+      });
+    }
+  }
+
   initEventListeners() {
+    this.initControlsUI();
+
     // Copy room code
     const copyBtn = document.getElementById("btn-copy-code");
     if (copyBtn) {

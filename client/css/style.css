@@ -480,6 +480,121 @@ html, body {
   border-radius: 4px;
 }
 
+/* Controls Configuration Section (Reference 2 classic controls) */
+.controls-config-section {
+  background-color: #f8fafc;
+  border: 1.5px solid #1f2937;
+  border-radius: 6px;
+  padding: 12px 14px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.controls-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.controls-title {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: #1f2937;
+}
+
+.btn-reset-link {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-reset-link:hover {
+  color: #1f2937;
+}
+
+.player-tab-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.player-tab {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  background-color: #ffffff;
+  border: 1.5px solid #1f2937;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.player-tab.active {
+  background-color: #1f2937;
+  color: #ffffff;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.player-tab:hover:not(.active) {
+  background-color: #f1f5f9;
+}
+
+.controls-bindings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.controls-binding-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.controls-binding-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  background-color: #ffffff;
+  border: 1.5px solid #1f2937;
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  min-width: 60px;
+  text-align: center;
+  box-shadow: 1px 1px 0px #1f2937;
+  transition: all 0.1s;
+}
+
+.controls-binding-btn:hover {
+  background-color: #fef3c7;
+}
+
+.controls-binding-btn.rebinding {
+  background-color: #ef4444;
+  color: #ffffff;
+  animation: pulse 0.8s infinite;
+}
+
+.controls-help-text {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  margin-top: 2px;
+}
+
 /* Level Clear Banner */
 .level-clear-panel {
   background-color: #ffffff;

@@ -45,17 +45,21 @@ class Room {
     return stages.length > 0 ? stages : ["stage_jump01", "stage_push02", "stage_jump02", "stage_push01"];
   }
 
-  addPlayer(playerData, isHost = false) {
-    if (this.players.size >= this.maxPlayers) {
-      return { success: false, error: "Room is full" };
-    }
-
-    // Determine slot (1 to maxPlayers)
+  getNextSlot() {
     const usedSlots = new Set(Array.from(this.players.values()).map((p) => p.slot));
     let slot = 1;
     while (usedSlots.has(slot)) {
       slot++;
     }
+    return slot;
+  }
+
+  addPlayer(playerData, isHost = false) {
+    if (this.players.size >= this.maxPlayers) {
+      return { success: false, error: "Room is full" };
+    }
+
+    const slot = this.getNextSlot();
 
     const player = {
       id: playerData.id,
@@ -341,10 +345,22 @@ class RoomManager {
     const code = this.playerRooms.get(playerId);
     if (!code) return;
 
-    this.playerRooms.delete(playerId);
     const room = this.rooms.get(code);
     if (room) {
+      const player = room.players.get(playerId);
+      const ws = player ? player.ws : null;
+      if (ws) {
+        for (const [otherId, otherP] of Array.from(room.players.entries())) {
+          if (otherP.ws === ws && otherId !== playerId) {
+            room.removePlayer(otherId);
+            this.playerRooms.delete(otherId);
+          }
+        }
+      }
+
       room.removePlayer(playerId);
+      this.playerRooms.delete(playerId);
+
       if (room.players.size === 0) {
         room.destroy();
         this.rooms.delete(code);
@@ -354,8 +370,13 @@ class RoomManager {
           room: room.getLobbyState()
         });
       }
+    } else {
+      this.playerRooms.delete(playerId);
     }
   }
 }
 
-module.exports = new RoomManager();
+const roomManagerInstance = new RoomManager();
+roomManagerInstance.RoomManager = RoomManager;
+roomManagerInstance.Room = Room;
+module.exports = roomManagerInstance;

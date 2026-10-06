@@ -156,6 +156,9 @@ class GameRenderer {
     // 1. Render Tilemap
     this.renderTilemap(stage);
 
+    // 1b. Render Solid Platforms (Rect blocks such as stairs/pillars)
+    this.renderPlatforms(stage.actors ? stage.actors.platforms : []);
+
     // 2. Render Bridges & Gates
     this.renderBridges(snapshot.bridges, stage.chipSize, stage.actors ? stage.actors.bridges : []);
 
@@ -211,6 +214,21 @@ class GameRenderer {
           ctx.strokeRect(px + 0.5, py + 0.5, chipSize - 1, chipSize - 1);
         }
       }
+    }
+  }
+
+  renderPlatforms(platforms) {
+    if (!platforms || platforms.length === 0) return;
+    const ctx = this.ctx;
+    ctx.fillStyle = "#374151"; // Solid charcoal block color matching Pico Park
+    ctx.strokeStyle = "#1f2937";
+    ctx.lineWidth = 1;
+
+    for (const p of platforms) {
+      const px = p.x - p.w / 2;
+      const py = p.y - p.h / 2;
+      ctx.fillRect(px, py, p.w, p.h);
+      ctx.strokeRect(px + 0.5, py + 0.5, p.w - 1, p.h - 1);
     }
   }
 
@@ -333,16 +351,20 @@ class GameRenderer {
       ctx.lineTo(bx + 4, by + b.h - 4);
       ctx.stroke();
 
-      // Box weight / handle
+      // Box weight / handle / player number
       ctx.fillStyle = "#1f2937";
       ctx.font = "bold 14px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("■", b.x, b.y);
+      const label = b.colorIndex !== undefined ? String(b.colorIndex + 1) : "■";
+      ctx.fillText(label, b.x, b.y);
     }
   }
 
   renderKey(key) {
+    if (!key || key.isUsed || (CONSTANTS.KEY_STATE && (key.state === CONSTANTS.KEY_STATE.KEY_USED || key.state === CONSTANTS.KEY_STATE.LEVEL_COMPLETE))) {
+      return;
+    }
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(key.x, key.y);
@@ -570,12 +592,26 @@ class GameRenderer {
 
     // Key status indicator
     if (snapshot.key) {
-      const hasKey = !!snapshot.key.heldBy;
+      const isUsed = snapshot.key.isUsed || (CONSTANTS.KEY_STATE && (snapshot.key.state === CONSTANTS.KEY_STATE.KEY_USED || snapshot.key.state === CONSTANTS.KEY_STATE.LEVEL_COMPLETE));
+      const hasKey = !isUsed && (!!snapshot.key.heldBy || (CONSTANTS.KEY_STATE && snapshot.key.state === CONSTANTS.KEY_STATE.KEY_CARRIED));
       ctx.textAlign = "right";
-      ctx.fillStyle = hasKey ? "#16a34a" : "#dc2626";
-      ctx.fillText(hasKey ? "KEY: ACQUIRED ✓" : "KEY: REQUIRED ✗", this.width - 24, 21);
+      if (isUsed) {
+        ctx.fillStyle = "#2563eb";
+        ctx.fillText("DOOR: UNLOCKED ✓", this.width - 24, 21);
+      } else if (hasKey) {
+        ctx.fillStyle = "#16a34a";
+        ctx.fillText("KEY: ACQUIRED ✓", this.width - 24, 21);
+      } else {
+        ctx.fillStyle = "#dc2626";
+        ctx.fillText("KEY: REQUIRED ✗", this.width - 24, 21);
+      }
     }
   }
 }
 
-window.GameRenderer = GameRenderer;
+if (typeof window !== "undefined") {
+  window.GameRenderer = GameRenderer;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = GameRenderer;
+}

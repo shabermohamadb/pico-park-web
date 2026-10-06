@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let localPlayerId = null;
   let isGameActive = false;
   let isLevelClearing = false;
+  let lastLobbyPlayerCount = 0;
   let lastFrameTime = performance.now();
 
   // Initialize Network Client
@@ -17,12 +18,33 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     onRoomJoined: (room, playerId) => {
       localPlayerId = playerId;
+      lastLobbyPlayerCount = room.players ? room.players.length : 1;
+      if (window.inputHandler) {
+        window.inputHandler.clearLocalPlayers();
+        const me = room.players.find((p) => p.id === playerId);
+        window.inputHandler.registerLocalPlayer(me ? me.slot : 1, playerId);
+      }
       UIManager.showScreen("lobby");
       UIManager.updateLobby(room, localPlayerId);
       AudioManager.playBGM("title_bgm");
     },
 
+    onLocalPlayerAdded: (subPlayerId, slot) => {
+      if (window.inputHandler) {
+        window.inputHandler.registerLocalPlayer(slot, subPlayerId);
+      }
+      AudioManager.playSFX("join");
+      UIManager.showToast(`Player ${slot} joined on this keyboard!`, "success");
+    },
+
     onRoomState: (room) => {
+      const currentCount = room.players ? room.players.length : 0;
+      if (lastLobbyPlayerCount > 0 && currentCount > lastLobbyPlayerCount) {
+        AudioManager.playSFX("join");
+      } else if (lastLobbyPlayerCount > 0 && currentCount < lastLobbyPlayerCount) {
+        AudioManager.playSFX("leave");
+      }
+      lastLobbyPlayerCount = currentCount;
       UIManager.updateLobby(room, localPlayerId);
     },
 
@@ -63,6 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     onDisconnect: () => {
       isGameActive = false;
+      if (window.inputHandler) {
+        window.inputHandler.clearLocalPlayers();
+      }
       UIManager.showToast("Disconnected from game server", "error");
       UIManager.showScreen("home");
       AudioManager.stopBGM();
@@ -75,9 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize Input Handler
   const input = new InputHandler(
-    (inputs) => {
+    (inputs, targetPlayerId) => {
       if (isGameActive) {
-        network.sendInput(inputs);
+        network.sendInput(inputs, targetPlayerId);
       }
     },
     (emoteText) => {
@@ -86,6 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   );
+  window.inputHandler = input;
 
   // Audio Unlock on first user interaction
   window.addEventListener("pointerdown", () => {
@@ -153,7 +179,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       AudioManager.playSFX("select");
-      network.createRoom(name, { maxPlayers: 8 });
+      const urlStage = new URLSearchParams(window.location.search).get("stage");
+      network.createRoom(name, { maxPlayers: 8, stage: urlStage || undefined });
     });
   }
 
@@ -207,6 +234,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const btnAddLocalPlayer = document.getElementById("btn-add-local-player");
+  if (btnAddLocalPlayer) {
+    btnAddLocalPlayer.addEventListener("click", () => {
+      AudioManager.playSFX("select");
+      network.addLocalPlayer();
+    });
+  }
+
   const btnStartGame = document.getElementById("btn-start-game");
   if (btnStartGame) {
     btnStartGame.addEventListener("click", () => {
@@ -228,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnInGameRestart = document.getElementById("btn-ingame-restart");
   if (btnInGameRestart) {
     btnInGameRestart.addEventListener("click", () => {
-      AudioManager.playSFX("select");
+      AudioManager.playSFX("retry");
       network.restartLevel();
     });
 

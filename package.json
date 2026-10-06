@@ -5,7 +5,9 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node test/integration_test.js"
+    "test": "node test/master_test.js && node test/test_stacking.js && node test/box_collision_test.js && node test/stage_jump02_test.js && node test/stage_push01_test.js",
+    "test:master": "node test/master_test.js",
+    "test:all": "node test/test_stacking.js && node test/master_test.js && node test/box_collision_test.js && node test/stage_jump02_test.js && node test/stage_push01_test.js && node test/integration_test.js"
   },
   "keywords": [
     "pico-park",

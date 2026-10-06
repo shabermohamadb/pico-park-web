@@ -75,10 +75,12 @@ const CONSTANTS = {
     PLAYER_EMOTE: "player_emote",
     RESTART_LEVEL: "restart_level",
     LEAVE_ROOM: "leave_room",
+    ADD_LOCAL_PLAYER: "add_local_player",
 
     // Server -> Client
     ROOM_CREATED: "room_created",
     ROOM_JOINED: "room_joined",
+    LOCAL_PLAYER_ADDED: "local_player_added",
     ROOM_STATE: "room_state",
     GAME_STARTED: "game_started",
     GAME_SNAPSHOT: "game_snapshot",
@@ -96,6 +98,27 @@ const CONSTANTS = {
     PLAYING: "PLAYING",
     LEVEL_CLEAR: "LEVEL_CLEAR",
     GAME_OVER: "GAME_OVER"
+  },
+
+  // Authoritative Stage State Machine (Section 10)
+  STAGE_STATE: {
+    LOADING: "LOADING",
+    READY: "READY",
+    PLAYING: "PLAYING",
+    KEY_COLLECTED: "KEY_COLLECTED",
+    GOAL_UNLOCKED: "GOAL_UNLOCKED",
+    COMPLETING: "COMPLETING",
+    COMPLETE: "COMPLETE",
+    FAILED: "FAILED",
+    RETRYING: "RETRYING"
+  },
+
+  // Authoritative Key State Machine (Section 7)
+  KEY_STATE: {
+    KEY_AVAILABLE: "KEY_AVAILABLE",
+    KEY_CARRIED: "KEY_CARRIED",
+    KEY_USED: "KEY_USED",
+    LEVEL_COMPLETE: "LEVEL_COMPLETE"
   }
 };
 
