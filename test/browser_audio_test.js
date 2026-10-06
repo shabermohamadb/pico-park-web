@@ -72,8 +72,30 @@ async function main() {
           `
         });
 
+        // Wait for room creation and lobby state
+        await new Promise((r) => setTimeout(r, 1200));
+
+        // Evaluate Lobby BGM state
+        const evalLobbyAudio = await send("Runtime.evaluate", {
+          expression: `
+            JSON.stringify({
+              isUnlocked: window.AudioManager?.isUnlocked,
+              currentBgmName: window.AudioManager?.currentBgmName,
+              hasCurrentBgmSource: !!window.AudioManager?.currentBgmSource,
+              hasBuffer: window.AudioManager?.buffers.has("title_bgm")
+            });
+          `
+        });
+        console.log("[Browser Audio Test] Lobby BGM State:", evalLobbyAudio.result.value);
+        const lobbyState = JSON.parse(evalLobbyAudio.result.value);
+        if (lobbyState.currentBgmName !== "title_bgm") {
+          throw new Error(`Expected lobby BGM to be 'title_bgm', got '${lobbyState.currentBgmName}'`);
+        }
+        if (!lobbyState.hasCurrentBgmSource) {
+          throw new Error("Lobby BGM audio source is not active");
+        }
+
         // Start Game
-        await new Promise((r) => setTimeout(r, 1000));
         console.log("[Browser Audio Test] Starting game...");
         await send("Runtime.evaluate", {
           expression: `document.getElementById("btn-start-game")?.click();`

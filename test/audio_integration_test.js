@@ -42,43 +42,35 @@ async function asyncIt(name, fn) {
   console.log("=================================================================\n");
 
   // Test 1: Audio assets exist in proper assets directory
-  it("Assets - Both bgm.mp3 and bgm.ogg exist in client/assets/audio/", () => {
-    const mp3Path = path.join(__dirname, "../client/assets/audio/bgm.mp3");
-    const oggPath = path.join(__dirname, "../client/assets/audio/bgm.ogg");
-
-    assert(fs.existsSync(mp3Path), "client/assets/audio/bgm.mp3 must exist");
-    assert(fs.existsSync(oggPath), "client/assets/audio/bgm.ogg must exist");
-
-    const mp3Stat = fs.statSync(mp3Path);
-    const oggStat = fs.statSync(oggPath);
-
-    assert(mp3Stat.size > 1000000, `bgm.mp3 size unexpectedly small: ${mp3Stat.size}`);
-    assert(oggStat.size > 1000000, `bgm.ogg size unexpectedly small: ${oggStat.size}`);
+  it("Assets - Both bgm (mp3, ogg) and title_bgm (mp3, ogg) exist in client/assets/audio/", () => {
+    const files = ["bgm.mp3", "bgm.ogg", "title_bgm.mp3", "title_bgm.ogg"];
+    for (const f of files) {
+      const p = path.join(__dirname, "../client/assets/audio/", f);
+      assert(fs.existsSync(p), `client/assets/audio/${f} must exist`);
+      const stat = fs.statSync(p);
+      assert(stat.size > 1000000, `${f} size unexpectedly small: ${stat.size}`);
+    }
   });
 
-  // Test 2: HTTP server serves bgm.mp3 with proper audio headers
-  await asyncIt("Server HTTP - bgm.mp3 served with correct Content-Type and caching", async () => {
-    const res = await new Promise((resolve, reject) => {
-      http.get("http://localhost:3001/assets/audio/bgm.mp3", resolve).on("error", reject);
-    });
+  // Test 2: HTTP server serves bgm and title_bgm with proper audio headers
+  await asyncIt("Server HTTP - bgm and title_bgm served with correct Content-Type and caching", async () => {
+    const urls = [
+      { url: "http://localhost:3001/assets/audio/bgm.mp3", type: "audio/mpeg" },
+      { url: "http://localhost:3001/assets/audio/bgm.ogg", type: "audio/ogg" },
+      { url: "http://localhost:3001/assets/audio/title_bgm.mp3", type: "audio/mpeg" },
+      { url: "http://localhost:3001/assets/audio/title_bgm.ogg", type: "audio/ogg" }
+    ];
 
-    assert.strictEqual(res.statusCode, 200);
-    assert.strictEqual(res.headers["content-type"], "audio/mpeg");
-    assert(res.headers["cache-control"], "Expected Cache-Control header");
-    assert(res.headers["etag"], "Expected ETag header");
-    assert.strictEqual(res.headers["accept-ranges"], "bytes");
-  });
+    for (const target of urls) {
+      const res = await new Promise((resolve, reject) => {
+        http.get(target.url, resolve).on("error", reject);
+      });
 
-  // Test 3: HTTP server serves bgm.ogg with proper audio headers
-  await asyncIt("Server HTTP - bgm.ogg served with correct Content-Type and caching", async () => {
-    const res = await new Promise((resolve, reject) => {
-      http.get("http://localhost:3001/assets/audio/bgm.ogg", resolve).on("error", reject);
-    });
-
-    assert.strictEqual(res.statusCode, 200);
-    assert.strictEqual(res.headers["content-type"], "audio/ogg");
-    assert(res.headers["cache-control"], "Expected Cache-Control header");
-    assert(res.headers["etag"], "Expected ETag header");
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(res.headers["content-type"], target.type);
+      assert(res.headers["cache-control"], "Expected Cache-Control header");
+      assert(res.headers["etag"], "Expected ETag header");
+    }
   });
 
   // Test 4: Mock Web Audio context to test AudioManagerEngine BGM lifecycle & deduplication

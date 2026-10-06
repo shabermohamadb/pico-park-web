@@ -150,6 +150,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Audio Unlock on first user interaction
   window.addEventListener("pointerdown", () => {
     AudioManager.unlock();
+    if (!isGameActive && !AudioManager.currentBgmSource) {
+      AudioManager.playBGM("title_bgm");
+    }
   }, { once: true });
 
   // UI Event Bindings
@@ -157,6 +160,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnGoCreate) {
     btnGoCreate.addEventListener("click", () => {
       AudioManager.unlock();
+      if (!isGameActive && !AudioManager.currentBgmSource) {
+        AudioManager.playBGM("title_bgm");
+      }
       AudioManager.playSFX("select");
       UIManager.showScreen("create");
     });
@@ -166,6 +172,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnGoJoin) {
     btnGoJoin.addEventListener("click", () => {
       AudioManager.unlock();
+      if (!isGameActive && !AudioManager.currentBgmSource) {
+        AudioManager.playBGM("title_bgm");
+      }
       AudioManager.playSFX("select");
       UIManager.showScreen("join");
     });

@@ -150,7 +150,7 @@ class AudioManagerEngine {
   preloadAll() {
     const sounds = [
       { name: "bgm", urls: ["assets/audio/bgm.mp3", "assets/audio/bgm.ogg"] },
-      { name: "title_bgm", urls: ["assets/audio/title_bgm.ogg", "assets/audio/title_bgm.mp3"] }
+      { name: "title_bgm", urls: ["assets/audio/title_bgm.mp3", "assets/audio/title_bgm.ogg"] }
     ];
 
     for (const s of sounds) {
