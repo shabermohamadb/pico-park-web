@@ -12,6 +12,7 @@ class AudioManagerEngine {
     this.sfxVolume = 0.8;
 
     this.buffers = new Map();
+    this.loadingPromises = new Map();
     this.currentBgmSource = null;
     this.currentBgmName = null;
     this.isUnlocked = false;
@@ -109,29 +110,52 @@ class AudioManagerEngine {
     this.preloadAll();
   }
 
-  async loadSound(name, url) {
+  loadSound(name, urls) {
     if (!this.ctx) this.initContext();
-    if (!this.ctx) return;
+    if (!this.ctx) return Promise.resolve(null);
 
-    try {
-      const res = await fetch(url);
-      const arrayBuffer = await res.arrayBuffer();
-      const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-      this.buffers.set(name, audioBuffer);
-    } catch (err) {
-      console.warn(`[Audio] Could not load ${name} from ${url}:`, err);
+    if (this.buffers.has(name)) {
+      return Promise.resolve(this.buffers.get(name));
     }
+
+    if (this.loadingPromises.has(name)) {
+      return this.loadingPromises.get(name);
+    }
+
+    const urlList = Array.isArray(urls) ? urls : [urls];
+
+    const loadPromise = (async () => {
+      for (const url of urlList) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const arrayBuffer = await res.arrayBuffer();
+          const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+          this.buffers.set(name, audioBuffer);
+          this.loadingPromises.delete(name);
+          return audioBuffer;
+        } catch (err) {
+          // Fall through to next candidate URL
+        }
+      }
+      this.loadingPromises.delete(name);
+      console.warn(`[Audio] Could not load sound '${name}' from candidates:`, urlList);
+      return null;
+    })();
+
+    this.loadingPromises.set(name, loadPromise);
+    return loadPromise;
   }
 
   preloadAll() {
     const sounds = [
-      { name: "bgm", url: "assets/audio/bgm.ogg" },
-      { name: "title_bgm", url: "assets/audio/title_bgm.ogg" }
+      { name: "bgm", urls: ["assets/audio/bgm.mp3", "assets/audio/bgm.ogg"] },
+      { name: "title_bgm", urls: ["assets/audio/title_bgm.ogg", "assets/audio/title_bgm.mp3"] }
     ];
 
     for (const s of sounds) {
       if (!this.buffers.has(s.name)) {
-        this.loadSound(s.name, s.url);
+        this.loadSound(s.name, s.urls);
       }
     }
   }
@@ -525,18 +549,26 @@ class AudioManagerEngine {
     if (this.currentBgmName === name && this.currentBgmSource) return;
 
     this.stopBGM();
+    this.currentBgmName = name;
 
     const buffer = this.buffers.get(name);
     if (!buffer) {
-      // If not loaded yet, load and play
-      this.loadSound(name, `assets/audio/${name}.ogg`).then(() => {
-        if (this.currentBgmName === name) {
-          this.playBGM(name);
+      // If not loaded yet, load candidates and play when ready
+      const candidates = [`assets/audio/${name}.mp3`, `assets/audio/${name}.ogg`];
+      this.loadSound(name, candidates).then((loadedBuf) => {
+        if (loadedBuf && this.currentBgmName === name && !this.currentBgmSource) {
+          this.startBgmSource(loadedBuf, name);
         }
       });
-      this.currentBgmName = name;
       return;
     }
+
+    this.startBgmSource(buffer, name);
+  }
+
+  startBgmSource(buffer, name) {
+    if (!this.ctx || !this.musicGain || !this.isUnlocked) return;
+    if (this.currentBgmSource) return; // Prevent duplicate audio playback
 
     try {
       const source = this.ctx.createBufferSource();
@@ -549,6 +581,18 @@ class AudioManagerEngine {
       this.currentBgmName = name;
     } catch (err) {
       console.warn(`[Audio] Failed to play BGM ${name}:`, err);
+    }
+  }
+
+  pauseBGM() {
+    if (this.ctx && this.ctx.state === "running") {
+      this.ctx.suspend();
+    }
+  }
+
+  resumeBGM() {
+    if (this.ctx && this.ctx.state === "suspended") {
+      this.ctx.resume();
     }
   }
 
@@ -603,6 +647,8 @@ class AudioManagerEngine {
   static unlock() { return window.audioManager?.unlock(); }
   static playSFX(name, eventId = null) { return window.audioManager?.playSFX(name, eventId); }
   static playBGM(name) { return window.audioManager?.playBGM(name); }
+  static pauseBGM() { return window.audioManager?.pauseBGM(); }
+  static resumeBGM() { return window.audioManager?.resumeBGM(); }
   static stopBGM() { return window.audioManager?.stopBGM(); }
   static setMasterVolume(val) { return window.audioManager?.setMasterVolume(val); }
   static setMusicVolume(val) { return window.audioManager?.setMusicVolume(val); }
