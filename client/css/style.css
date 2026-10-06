@@ -665,3 +665,121 @@ html, body {
 .toast.fade-out {
   opacity: 0;
 }
+
+/* ==========================================================================
+   TOP AUTH BAR (Google Sign-In / Guest)
+   ========================================================================== */
+.auth-top-bar {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+}
+
+.auth-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-guest-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid var(--border-color);
+  padding: 5px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-signin-google {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: #1f2937;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s ease;
+}
+
+.btn-signin-google:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.btn-signin-google svg {
+  flex-shrink: 0;
+}
+
+.auth-user-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.auth-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.auth-avatar-initial {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-signout {
+  background-color: #f3f4f6;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-signout:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.in-game .auth-top-bar {
+  display: none;
+}
+

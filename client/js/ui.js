@@ -28,6 +28,48 @@ class UIManagerEngine {
         }
       }
     }
+    document.body.classList.toggle("in-game", screenName === "game");
+  }
+
+  updateAuthUI(payload) {
+    if (!payload) return;
+
+    const guestView = document.getElementById("auth-guest-view");
+    const userView = document.getElementById("auth-user-view");
+    const topGuestName = document.getElementById("top-guest-name");
+    const topUserName = document.getElementById("top-user-name");
+    const topUserAvatar = document.getElementById("top-user-avatar");
+    const topUserInitial = document.getElementById("top-user-initial");
+
+    if (payload.isGuest) {
+      if (guestView) guestView.classList.remove("hidden");
+      if (userView) userView.classList.add("hidden");
+      if (topGuestName) topGuestName.textContent = payload.displayName || "Guest";
+    } else {
+      if (guestView) guestView.classList.add("hidden");
+      if (userView) userView.classList.remove("hidden");
+      if (topUserName) topUserName.textContent = payload.displayName || "Player";
+
+      if (payload.avatarUrl && topUserAvatar) {
+        topUserAvatar.src = payload.avatarUrl;
+        topUserAvatar.classList.remove("hidden");
+        if (topUserInitial) topUserInitial.classList.add("hidden");
+      } else if (topUserInitial) {
+        if (topUserAvatar) topUserAvatar.classList.add("hidden");
+        topUserInitial.classList.remove("hidden");
+        topUserInitial.textContent = (payload.displayName || "P").charAt(0).toUpperCase();
+      }
+
+      // Prefill name into input fields
+      const createNameInput = document.getElementById("input-create-name");
+      const joinNameInput = document.getElementById("input-join-name");
+      if (createNameInput && (createNameInput.value === "Host" || !createNameInput.value)) {
+        createNameInput.value = payload.displayName;
+      }
+      if (joinNameInput && (joinNameInput.value === "Player" || !joinNameInput.value)) {
+        joinNameInput.value = payload.displayName;
+      }
+    }
   }
 
   showToast(message, type = "info") {
@@ -251,6 +293,23 @@ class UIManagerEngine {
     const closeSettingsBtn = document.getElementById("btn-close-settings");
     if (closeSettingsBtn) {
       closeSettingsBtn.addEventListener("click", () => this.closeSettings());
+    }
+
+    // Google Sign-in / Sign-out
+    const btnGoogleSignIn = document.getElementById("btn-google-signin");
+    if (btnGoogleSignIn) {
+      btnGoogleSignIn.addEventListener("click", () => {
+        window.AudioManager?.playSFX("select");
+        window.SupabaseAuth?.signInWithGoogle();
+      });
+    }
+
+    const btnGoogleSignOut = document.getElementById("btn-google-signout");
+    if (btnGoogleSignOut) {
+      btnGoogleSignOut.addEventListener("click", () => {
+        window.AudioManager?.playSFX("select");
+        window.SupabaseAuth?.signOut();
+      });
     }
   }
 

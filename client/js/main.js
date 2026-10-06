@@ -118,6 +118,20 @@ document.addEventListener("DOMContentLoaded", () => {
   network.connect();
   window.network = network;
 
+  // Initialize Supabase Google & Guest Auth
+  if (window.SupabaseAuth) {
+    window.SupabaseAuth.onAuthChange((payload) => {
+      window.uiManager?.updateAuthUI(payload);
+    });
+    window.SupabaseAuth.init().then(() => {
+      window.uiManager?.updateAuthUI({
+        isGuest: window.SupabaseAuth.isGuest,
+        displayName: window.SupabaseAuth.getDisplayName(),
+        avatarUrl: window.SupabaseAuth.getAvatarUrl()
+      });
+    });
+  }
+
   // Initialize Input Handler
   const input = new InputHandler(
     (inputs, targetPlayerId) => {

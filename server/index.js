@@ -8,6 +8,24 @@ const { WebSocketServer } = require("ws");
 const CONSTANTS = require("../shared/constants");
 const roomManager = require("./roomManager");
 
+// Load .env if present
+const fs = require("fs");
+const envPath = path.join(__dirname, "../.env");
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith("#")) {
+      const idx = trimmed.indexOf("=");
+      if (idx !== -1) {
+        const key = trimmed.slice(0, idx).trim();
+        const val = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+        if (!process.env[key]) process.env[key] = val;
+      }
+    }
+  }
+}
+
 const app = express();
 let PORT = parseInt(process.env.PORT, 10) || 3001;
 
@@ -30,6 +48,14 @@ app.get("/health", (req, res) => {
     status: "ok",
     rooms: roomManager.rooms.size,
     uptime: process.uptime()
+  });
+});
+
+// Public Supabase configuration for client authentication
+app.get("/api/config", (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || "",
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ""
   });
 });
 
