@@ -59,6 +59,7 @@ class InputHandler {
     // Map: slot (1 to 6) -> playerId
     this.localPlayers = new Map();
     this.playerStates = new Map(); // slot -> { left, right, jump, action }
+    this.virtualButtons = new Map(); // slot -> { left, right, jump, action }
 
     this.bindEvents();
   }
@@ -240,7 +241,33 @@ class InputHandler {
     });
   }
 
+  setVirtualButton(action, isPressed, slot = 1) {
+    if (!this.virtualButtons.has(slot)) {
+      this.virtualButtons.set(slot, { left: false, right: false, jump: false, action: false });
+    }
+    const slotVirt = this.virtualButtons.get(slot);
+    if (slotVirt[action] !== !!isPressed) {
+      slotVirt[action] = !!isPressed;
+      this.updateState();
+    }
+  }
+
+  clearVirtualButtons(slot = 1) {
+    if (slot === null || slot === undefined) {
+      this.virtualButtons.clear();
+    } else if (this.virtualButtons.has(slot)) {
+      this.virtualButtons.set(slot, { left: false, right: false, jump: false, action: false });
+    }
+    this.updateState();
+  }
+
   isActionActive(playerNum, action) {
+    // Check virtual touch buttons first
+    const virt = this.virtualButtons.get(playerNum);
+    if (virt && virt[action]) {
+      return true;
+    }
+
     const binding = this.configs[playerNum];
     if (!binding || !binding[action]) return false;
 
@@ -310,6 +337,7 @@ class InputHandler {
 
   reset() {
     this.activeKeys.clear();
+    this.virtualButtons.clear();
     for (const [slot, id] of this.localPlayers.entries()) {
       const resetState = { left: false, right: false, jump: false, action: false };
       this.playerStates.set(slot, resetState);
@@ -327,4 +355,9 @@ class InputHandler {
   }
 }
 
-window.InputHandler = InputHandler;
+if (typeof window !== "undefined") {
+  window.InputHandler = InputHandler;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { InputHandler, DEFAULT_KEY_CONFIGS };
+}

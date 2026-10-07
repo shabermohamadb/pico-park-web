@@ -147,6 +147,23 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   window.inputHandler = input;
 
+  // Initialize Mobile Touch Controller
+  if (typeof TouchController !== "undefined") {
+    window.touchController = new TouchController(input);
+  }
+
+  const selectTouchMode = document.getElementById("select-touch-mode");
+  if (selectTouchMode) {
+    if (window.touchController) {
+      selectTouchMode.value = window.touchController.displayMode;
+    }
+    selectTouchMode.addEventListener("change", (e) => {
+      if (window.touchController) {
+        window.touchController.setDisplayMode(e.target.value);
+      }
+    });
+  }
+
   // Audio Unlock on first user interaction
   window.addEventListener("pointerdown", () => {
     AudioManager.unlock();

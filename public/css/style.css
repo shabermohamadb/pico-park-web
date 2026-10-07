@@ -29,12 +29,14 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
   background-color: var(--bg-color);
   color: var(--text-main);
   font-family: var(--font-family);
   display: flex;
   justify-content: center;
   align-items: center;
+  -webkit-touch-callout: none;
 }
 
 /* App Viewport Container (keeps 16:9 canvas cleanly letterboxed) */
@@ -341,6 +343,8 @@ html, body {
 .game-bottom-bar {
   position: absolute;
   bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 8px;
   z-index: 5;
@@ -930,4 +934,276 @@ html, body {
 .in-game .auth-top-bar {
   display: none;
 }
+
+/* ==========================================================================
+   MOBILE & TOUCH OPTIMIZATIONS (PICO PARK Web Touchscreen Edition)
+   ========================================================================== */
+
+/* Fullscreen Button */
+.btn-fs-toggle {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.btn-fs-toggle:hover {
+  background: #ffffff;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Touch Controls Gamepad Overlay */
+.touch-controls-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 45;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px)) 20px;
+  box-sizing: border-box;
+}
+
+.touch-controls-container.touch-hidden {
+  display: none !important;
+}
+
+/* Touch Control Groups */
+.touch-group {
+  display: flex;
+  gap: 14px;
+  pointer-events: auto;
+  align-items: flex-end;
+  touch-action: none;
+}
+
+.touch-group-left {
+  margin-bottom: 8px;
+  margin-left: 4px;
+}
+
+.touch-group-right {
+  margin-bottom: 8px;
+  margin-right: 4px;
+}
+
+/* Touch Button Base */
+.touch-btn {
+  width: 72px;
+  height: 72px;
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2.5px solid rgba(255, 255, 255, 0.65);
+  color: #1e293b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform 0.08s ease, background 0.08s ease, box-shadow 0.08s ease, border-color 0.08s ease;
+  outline: none;
+}
+
+.touch-btn svg {
+  pointer-events: none;
+}
+
+.touch-btn-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin-top: 1px;
+  pointer-events: none;
+}
+
+/* Pressed State (Visual Haptic Feedback) */
+.touch-btn.pressed,
+.touch-btn:active {
+  background: rgba(249, 115, 22, 0.88);
+  border-color: #ffffff;
+  color: #ffffff;
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.45), inset 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* D-Pad Buttons */
+.touch-btn-dpad {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Action Button */
+.touch-btn-action {
+  background: rgba(241, 245, 249, 0.45);
+  border-color: rgba(203, 213, 225, 0.8);
+}
+
+/* Jump Button (Prominent & Sizable) */
+.touch-btn-jump {
+  width: 82px;
+  height: 82px;
+  background: rgba(255, 255, 255, 0.48);
+  border-color: rgba(249, 115, 22, 0.7);
+  color: #c2410c;
+}
+
+.touch-btn-jump.pressed,
+.touch-btn-jump:active {
+  background: #ea580c;
+  color: #ffffff;
+}
+
+/* Emote Bar Adjustment when Touch Controls Active */
+.touch-controls-active .game-bottom-bar {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 5px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: calc(100% - 240px);
+  overflow-x: auto;
+}
+
+.touch-controls-active .emote-btn {
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+/* Mobile Portrait Advisory Prompt (Full Screen Edge-to-Edge) */
+.portrait-rotate-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.portrait-rotate-prompt.hidden {
+  display: none !important;
+}
+
+.portrait-rotate-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 320px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.portrait-rotate-icon {
+  font-size: 46px;
+  animation: portrait-wobble 2.2s ease-in-out infinite;
+}
+
+@keyframes portrait-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-20deg); }
+  70% { transform: rotate(90deg); }
+}
+
+.portrait-rotate-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.portrait-rotate-card p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Responsive Touch Target Sizing & Mobile Label Toggles */
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 800px), (pointer: coarse) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: inline !important;
+  }
+
+  .game-top-actions {
+    top: 6px;
+    right: 8px;
+    gap: 5px;
+  }
+
+  .game-top-actions .icon-btn {
+    min-height: 32px;
+    padding: 4px 8px;
+    font-size: 12px;
+    box-shadow: 1px 1px 0px #1f2937;
+  }
+
+  .btn {
+    min-height: 48px;
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+
+  .form-input {
+    min-height: 46px;
+    font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+  }
+
+  .player-tab {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .touch-btn {
+    width: 68px;
+    height: 68px;
+  }
+
+  .touch-btn-jump {
+    width: 78px;
+    height: 78px;
+  }
+
+  .game-instructions-banner {
+    display: none; /* Auto-hide verbose banner on small screens to prioritize gameplay visibility */
+  }
+}
+
 

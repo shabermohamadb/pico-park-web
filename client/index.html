@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1a1a">
   <title>PICO PARK Web</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/png" href="assets/players/player-sprites/picolecitta.png">
@@ -140,9 +143,22 @@
       <div id="screen-game" class="hidden">
         <!-- Floating Actions -->
         <div class="game-top-actions">
-          <button id="btn-ingame-instructions" class="icon-btn">GUIDE (H)</button>
-          <button id="btn-ingame-restart" class="icon-btn">RETRY (R)</button>
-          <button id="btn-ingame-settings" class="icon-btn">SETTINGS</button>
+          <button id="btn-toggle-fullscreen" class="icon-btn btn-fs-toggle" type="button" aria-label="Toggle Fullscreen">
+            <span class="desktop-only">⛶ FULLSCREEN</span>
+            <span class="mobile-only">⛶</span>
+          </button>
+          <button id="btn-ingame-instructions" class="icon-btn" type="button" aria-label="Guide">
+            <span class="desktop-only">GUIDE (H)</span>
+            <span class="mobile-only">GUIDE</span>
+          </button>
+          <button id="btn-ingame-restart" class="icon-btn" type="button" aria-label="Restart">
+            <span class="desktop-only">RETRY (R)</span>
+            <span class="mobile-only">RETRY</span>
+          </button>
+          <button id="btn-ingame-settings" class="icon-btn" type="button" aria-label="Settings">
+            <span class="desktop-only">SETTINGS</span>
+            <span class="mobile-only">⚙</span>
+          </button>
         </div>
 
         <!-- In-Game Mission / Instructions Banner -->
@@ -260,6 +276,15 @@
             <input type="range" id="slider-sfx" class="slider-input" min="0" max="1" step="0.05" value="0.8">
           </div>
 
+          <div class="setting-item-row" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <label for="select-touch-mode" style="font-weight: 600; font-size: 13px; color: var(--text-main);">Touch Gamepad</label>
+            <select id="select-touch-mode" class="form-input" style="width: auto; padding: 4px 8px; font-size: 12px; border-radius: 6px;">
+              <option value="auto">Auto (Touch Devices)</option>
+              <option value="always">Always On</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+
           <div class="controls-config-section">
             <div class="controls-header-row">
               <span class="controls-title">CONTROLS CONFIGURATION</span>
@@ -289,6 +314,49 @@
           <p style="margin-top: 12px; font-size: 14px; color: #64748b;">Advancing to next stage...</p>
         </div>
       </div>
+
+      <!-- ON-SCREEN TOUCH GAMEPAD -->
+      <div id="touch-controls-container" class="touch-controls-container touch-hidden">
+        <!-- Left Thumb: Directional D-Pad (Left / Right) -->
+        <div class="touch-group touch-group-left">
+          <button id="touch-btn-left" class="touch-btn touch-btn-dpad" type="button" aria-label="Move Left">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+            </svg>
+          </button>
+          <button id="touch-btn-right" class="touch-btn touch-btn-dpad" type="button" aria-label="Move Right">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+              <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Right Thumb: Jump & Action Buttons -->
+        <div class="touch-group touch-group-right">
+          <button id="touch-btn-action" class="touch-btn touch-btn-action" type="button" aria-label="Down / Action">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+            </svg>
+            <span class="touch-btn-label">DOWN</span>
+          </button>
+          <button id="touch-btn-jump" class="touch-btn touch-btn-jump" type="button" aria-label="Jump">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+              <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+            </svg>
+            <span class="touch-btn-label">JUMP</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PORTRAIT ORIENTATION PROMPT (Full screen mobile overlay) -->
+    <div id="portrait-rotate-prompt" class="portrait-rotate-prompt hidden">
+      <div class="portrait-rotate-card">
+        <div class="portrait-rotate-icon">📱 🔄</div>
+        <h3>ROTATE DEVICE</h3>
+        <p>PICO PARK is optimized for landscape play. Rotate your device sideways for the best co-op view!</p>
+        <button id="btn-dismiss-portrait" class="btn btn-secondary" type="button">Continue in Portrait</button>
+      </div>
     </div>
   </div>
 
@@ -302,6 +370,7 @@
   <script src="js/renderer.js"></script>
   <script src="js/network.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/touchControls.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
