@@ -14,6 +14,9 @@ class TouchController {
 
     // Mode: 'auto', 'always', 'off'
     this.displayMode = this.loadDisplayMode();
+    // Auto Fullscreen: true / false
+    this.autoFullscreen = this.loadAutoFullscreen();
+    this.deferredFsBound = false;
 
     this.init();
   }
@@ -48,6 +51,24 @@ class TouchController {
       localStorage.setItem("pico_touch_mode", mode);
     } catch (e) {}
     this.updateVisibility();
+  }
+
+  loadAutoFullscreen() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("autofs") === "1") return true;
+    if (urlParams.get("autofs") === "0") return false;
+    try {
+      const stored = localStorage.getItem("pico_auto_fullscreen");
+      if (stored !== null) return stored === "true";
+    } catch (e) {}
+    return this.isTouchDevice;
+  }
+
+  setAutoFullscreen(enabled) {
+    this.autoFullscreen = !!enabled;
+    try {
+      localStorage.setItem("pico_auto_fullscreen", String(this.autoFullscreen));
+    } catch (e) {}
   }
 
   init() {
@@ -107,7 +128,6 @@ class TouchController {
         this.activePointers.delete(e.pointerId);
 
         if (this.inputHandler) {
-          // Check if any other pointer is still holding this action
           let stillActive = false;
           for (const act of this.activePointers.values()) {
             if (act === action) {
@@ -125,12 +145,9 @@ class TouchController {
       btn.addEventListener("pointerup", handleRelease);
       btn.addEventListener("pointercancel", handleRelease);
       btn.addEventListener("lostpointercapture", handleRelease);
-
-      // Prevent default context menu
       btn.addEventListener("contextmenu", (e) => e.preventDefault());
     });
 
-    // Touch Retry button in HUD
     const touchRetryBtn = document.getElementById("touch-btn-retry");
     if (touchRetryBtn) {
       touchRetryBtn.addEventListener("pointerdown", (e) => {
@@ -140,7 +157,6 @@ class TouchController {
       });
     }
 
-    // Touch Guide button in HUD
     const touchGuideBtn = document.getElementById("touch-btn-guide");
     if (touchGuideBtn) {
       touchGuideBtn.addEventListener("pointerdown", (e) => {
@@ -151,57 +167,115 @@ class TouchController {
     }
   }
 
+  requestFullscreen() {
+    const doc = document;
+    const docEl = document.documentElement;
+    const isFs = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+    if (!isFs) {
+      const req = (
+        docEl.requestFullscreen ||
+        docEl.webkitRequestFullscreen ||
+        docEl.mozRequestFullScreen ||
+        docEl.msRequestFullscreen
+      );
+      if (req) {
+        return req.call(docEl).catch((err) => {
+          console.warn("[Fullscreen] Request rejected (awaiting user gesture):", err);
+          return null;
+        });
+      }
+    }
+    return Promise.resolve();
+  }
+
+  exitFullscreen() {
+    const doc = document;
+    const isFs = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+    if (isFs) {
+      const exit = (
+        doc.exitFullscreen ||
+        doc.webkitExitFullscreen ||
+        doc.mozCancelFullScreen ||
+        doc.msExitFullscreen
+      );
+      if (exit) {
+        return exit.call(doc).catch((err) => {
+          console.warn("[Fullscreen] Failed to exit fullscreen:", err);
+          return null;
+        });
+      }
+    }
+    return Promise.resolve();
+  }
+
+  tryAutoFullscreen() {
+    if (!this.autoFullscreen) return;
+    this.requestFullscreen();
+  }
+
+  enableDeferredAutoFullscreen() {
+    if (!this.autoFullscreen || this.deferredFsBound) return;
+    const isFs = !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+    if (isFs) return;
+
+    this.deferredFsBound = true;
+    const onNextGesture = () => {
+      window.removeEventListener("pointerdown", onNextGesture, true);
+      window.removeEventListener("keydown", onNextGesture, true);
+      this.deferredFsBound = false;
+      if (this.autoFullscreen) {
+        this.tryAutoFullscreen();
+      }
+    };
+    window.addEventListener("pointerdown", onNextGesture, true);
+    window.addEventListener("keydown", onNextGesture, true);
+  }
+
   bindFullscreen() {
     if (!this.fullscreenBtn) return;
 
-    const toggleFs = () => {
-      const doc = document;
-      const docEl = document.documentElement;
-
-      const isFs = !!(
-        doc.fullscreenElement ||
-        doc.webkitFullscreenElement ||
-        doc.mozFullScreenElement ||
-        doc.msFullscreenElement
-      );
-
-      if (!isFs) {
-        const req = (
-          docEl.requestFullscreen ||
-          docEl.webkitRequestFullscreen ||
-          docEl.mozRequestFullScreen ||
-          docEl.msRequestFullscreen
-        );
-        if (req) {
-          req.call(docEl).catch((err) => {
-            console.warn("[Fullscreen] Failed to enter fullscreen:", err);
-          });
-        }
-      } else {
-        const exit = (
-          doc.exitFullscreen ||
-          doc.webkitExitFullscreen ||
-          doc.mozCancelFullScreen ||
-          doc.msExitFullscreen
-        );
-        if (exit) {
-          exit.call(doc).catch((err) => {
-            console.warn("[Fullscreen] Failed to exit fullscreen:", err);
-          });
-        }
-      }
-    };
-
-    this.fullscreenBtn.addEventListener("click", toggleFs);
-
-    const updateFsIcon = () => {
+    this.fullscreenBtn.addEventListener("click", () => {
       const isFs = !!(
         document.fullscreenElement ||
         document.webkitFullscreenElement ||
         document.mozFullScreenElement ||
         document.msFullscreenElement
       );
-      this.fullscreenBtn.textContent = isFs ? "✕ EXIT" : "⛶ FULLSCREEN";
+      if (isFs) {
+        this.exitFullscreen();
+      } else {
+        this.requestFullscreen();
+      }
+    });
+
+    const updateFsIcon = () => {
+      if (!this.fullscreenBtn) return;
+      const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      if (isFs) {
+        this.fullscreenBtn.innerHTML = '<span class="desktop-only">✕ EXIT</span><span class="mobile-only">✕</span>';
+      } else {
+        this.fullscreenBtn.innerHTML = '<span class="desktop-only">⛶ FULLSCREEN</span><span class="mobile-only">⛶</span>';
+      }
       this.fullscreenBtn.setAttribute("aria-label", isFs ? "Exit Fullscreen" : "Enter Fullscreen");
       if (isFs) {
         document.body.classList.add("is-fullscreen");
@@ -213,6 +287,8 @@ class TouchController {
     document.addEventListener("fullscreenchange", updateFsIcon);
     document.addEventListener("webkitfullscreenchange", updateFsIcon);
     document.addEventListener("mozfullscreenchange", updateFsIcon);
+
+    updateFsIcon();
   }
 
   bindOrientation() {
@@ -238,7 +314,7 @@ class TouchController {
 
     window.addEventListener("resize", checkOrientation);
     window.addEventListener("orientationchange", () => {
-      this.portraitDismissed = false; // reset dismissal on actual device rotation
+      this.portraitDismissed = false;
       setTimeout(checkOrientation, 200);
     });
 
@@ -246,12 +322,10 @@ class TouchController {
   }
 
   preventAccidentalGestures() {
-    // Prevent iOS Safari gesture zooming
     document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
     document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
     document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: false });
 
-    // Prevent double tap zoom on canvas and touch controls
     if (this.container) {
       this.container.addEventListener("dblclick", (e) => e.preventDefault());
     }
@@ -270,7 +344,6 @@ class TouchController {
     } else if (this.displayMode === "off") {
       shouldShow = false;
     } else {
-      // Auto: show on touch devices or small screens
       shouldShow = this.isTouchDevice || (window.innerWidth <= 1024 && window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
     }
 

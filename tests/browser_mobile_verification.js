@@ -133,6 +133,32 @@ async function verifyMobileExperience() {
     await page.screenshot({ path: gameplaySsPath });
     console.log("  -> Saved mobile gameplay screenshot: " + gameplaySsPath);
 
+    // -------------------------------------------------------------
+    // PART 3: In-Game Settings & Auto Fullscreen Option Verification
+    // -------------------------------------------------------------
+    console.log("\n[Part 3] Testing Settings Modal & Auto Fullscreen Option...");
+    await page.click("#btn-ingame-settings");
+    await page.waitForSelector("#modal-settings", { visible: true, timeout: 5000 });
+    await new Promise((r) => setTimeout(r, 400));
+
+    // Check Auto Fullscreen checkbox state
+    const autoFsChecked = await page.$eval("#check-auto-fullscreen", (el) => el.checked);
+    console.log(`  -> Auto Fullscreen Checkbox Initially Checked: ${autoFsChecked}`);
+
+    // Toggle Auto Fullscreen and verify localStorage update
+    await page.click("#check-auto-fullscreen");
+    const storedAutoFs = await page.evaluate(() => localStorage.getItem("pico_auto_fullscreen"));
+    console.log(`  -> Toggled Auto Fullscreen Stored in localStorage: ${storedAutoFs}`);
+
+    // Toggle back to true
+    await page.click("#check-auto-fullscreen");
+    await new Promise((r) => setTimeout(r, 300));
+
+    // Capture Settings Modal Screenshot showing Auto Fullscreen
+    const settingsSsPath = path.join(artifactDir, "screenshot_settings_auto_fullscreen.png");
+    await page.screenshot({ path: settingsSsPath });
+    console.log("  -> Saved settings screenshot: " + settingsSsPath);
+
     console.log("\n=======================================================");
     console.log("   MOBILE BROWSER VERIFICATION COMPLETED SUCCESSFULLY! ");
     console.log("=======================================================\n");

@@ -970,7 +970,10 @@ html, body {
   box-sizing: border-box;
 }
 
-.touch-controls-container.touch-hidden {
+.touch-controls-container.touch-hidden,
+#screen-game.hidden ~ #touch-controls-container,
+body:has(.modal-overlay:not(.hidden)) #touch-controls-container,
+body:has(.ui-overlay:not(.hidden)) #touch-controls-container {
   display: none !important;
 }
 

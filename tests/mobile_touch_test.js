@@ -23,18 +23,50 @@ function runTest(name, fn) {
   }
 }
 
-// Mock window and localStorage for node environment
+// Mock window, document, and localStorage for node environment
 global.window = {
+  innerWidth: 1024,
+  innerHeight: 768,
+  location: { search: "" },
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  matchMedia: () => ({ matches: false })
+};
+global.document = {
+  getElementById: (id) => ({
+    id,
+    classList: {
+      add: () => {},
+      remove: () => {},
+      contains: () => false
+    },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    setAttribute: () => {},
+    style: {}
+  }),
+  documentElement: {
+    requestFullscreen: async () => {}
+  },
+  body: {
+    classList: {
+      add: () => {},
+      remove: () => {}
+    }
+  },
   addEventListener: () => {},
   removeEventListener: () => {}
 };
+global.navigator = { maxTouchPoints: 0 };
 global.localStorage = {
   _store: {},
-  getItem(k) { return this._store[k] || null; },
+  getItem(k) { return this._store[k] !== undefined ? this._store[k] : null; },
   setItem(k, v) { this._store[k] = String(v); },
   removeItem(k) { delete this._store[k]; },
   clear() { this._store = {}; }
 };
+
+const { TouchController } = require("../src/client/touchControls");
 
 // 1. Initial State
 runTest("InputHandler initializes with empty virtualButtons", () => {
@@ -165,6 +197,43 @@ runTest("Hybrid input: Virtual touch and keyboard work simultaneously without co
   handler.activeKeys.delete("KeyA");
   assert.strictEqual(handler.isActionActive(1, "left"), false);
   assert.strictEqual(handler.isActionActive(1, "jump"), true);
+});
+
+// 9. Auto Fullscreen: Option loading and persistence
+runTest("Auto Fullscreen loads preference and persists changes to localStorage", () => {
+  localStorage.clear();
+  const inputHandler = new InputHandler();
+  const controller = new TouchController(inputHandler);
+
+  assert.strictEqual(controller.autoFullscreen, false, "Default on non-touch desktop is false");
+  
+  controller.setAutoFullscreen(true);
+  assert.strictEqual(controller.autoFullscreen, true);
+  assert.strictEqual(localStorage.getItem("pico_auto_fullscreen"), "true");
+
+  controller.setAutoFullscreen(false);
+  assert.strictEqual(controller.autoFullscreen, false);
+  assert.strictEqual(localStorage.getItem("pico_auto_fullscreen"), "false");
+});
+
+// 10. Auto Fullscreen: tryAutoFullscreen invocation
+runTest("tryAutoFullscreen invokes requestFullscreen when enabled", () => {
+  const inputHandler = new InputHandler();
+  const controller = new TouchController(inputHandler);
+
+  let requested = false;
+  controller.requestFullscreen = () => {
+    requested = true;
+    return Promise.resolve();
+  };
+
+  controller.autoFullscreen = false;
+  controller.tryAutoFullscreen();
+  assert.strictEqual(requested, false, "Must not request fullscreen when disabled");
+
+  controller.autoFullscreen = true;
+  controller.tryAutoFullscreen();
+  assert.strictEqual(requested, true, "Must request fullscreen when enabled");
 });
 
 console.log("\n=================================================================");

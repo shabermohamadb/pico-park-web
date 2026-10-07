@@ -68,6 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
       UIManager.hideLevelClear();
       renderer.particles = [];
       AudioManager.playBGM("bgm");
+      if (window.touchController) {
+        window.touchController.tryAutoFullscreen();
+        window.touchController.enableDeferredAutoFullscreen();
+      }
     },
 
     onLevelClear: (stageName) => {
@@ -91,6 +95,9 @@ document.addEventListener("DOMContentLoaded", () => {
       UIManager.hideLevelClear();
       renderer.particles = [];
       AudioManager.playBGM("bgm");
+      if (window.touchController) {
+        window.touchController.tryAutoFullscreen();
+      }
     },
 
     onEmote: (playerId, emoteText) => {
@@ -164,6 +171,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const checkAutoFullscreen = document.getElementById("check-auto-fullscreen");
+  if (checkAutoFullscreen) {
+    if (window.touchController) {
+      checkAutoFullscreen.checked = window.touchController.autoFullscreen;
+    }
+    checkAutoFullscreen.addEventListener("change", (e) => {
+      if (window.touchController) {
+        window.touchController.setAutoFullscreen(e.target.checked);
+      }
+    });
+  }
+
   // Audio Unlock on first user interaction
   window.addEventListener("pointerdown", () => {
     AudioManager.unlock();
@@ -201,6 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnOpenSettings) {
     btnOpenSettings.addEventListener("click", () => {
       AudioManager.playSFX("select");
+      if (checkAutoFullscreen && window.touchController) {
+        checkAutoFullscreen.checked = window.touchController.autoFullscreen;
+      }
+      if (selectTouchMode && window.touchController) {
+        selectTouchMode.value = window.touchController.displayMode;
+      }
       UIManager.openSettings();
     });
   }
@@ -209,6 +234,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnInGameSettings) {
     btnInGameSettings.addEventListener("click", () => {
       AudioManager.playSFX("select");
+      if (checkAutoFullscreen && window.touchController) {
+        checkAutoFullscreen.checked = window.touchController.autoFullscreen;
+      }
+      if (selectTouchMode && window.touchController) {
+        selectTouchMode.value = window.touchController.displayMode;
+      }
       UIManager.openSettings();
     });
   }
@@ -314,6 +345,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnStartGame = document.getElementById("btn-start-game");
   if (btnStartGame) {
     btnStartGame.addEventListener("click", () => {
+      if (window.touchController) {
+        window.touchController.tryAutoFullscreen();
+      }
       AudioManager.playSFX("start");
       network.startGame();
     });
