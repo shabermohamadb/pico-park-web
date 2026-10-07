@@ -1,0 +1,99 @@
+{
+  "name": "stage_battle_region",
+  "width": 40,
+  "height": 23,
+  "chipSize": 32.0,
+  "scale": 1.0,
+  "scrollable": false,
+  "actors": [
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "1",
+      "x": 590.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "2",
+      "x": 690.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "3",
+      "x": 500.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "4",
+      "x": 780.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "5",
+      "x": 410.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "6",
+      "x": 870.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "7",
+      "x": 320.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BattleBreakoutPlayer2",
+      "id": "8",
+      "x": 960.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "SwitchTimer",
+      "id": "TerritoryBallJudge",
+      "x": 640.0,
+      "y": 60.0,
+      "args": [
+        30
+      ]
+    },
+    {
+      "type": "TerritoryBallJudge",
+      "id": "",
+      "x": 0.0,
+      "y": 0.0,
+      "args": []
+    }
+  ],
+  "tiles": []
+}

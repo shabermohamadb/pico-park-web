@@ -1,0 +1,119 @@
+{
+  "name": "stage_breakout01",
+  "width": 40,
+  "height": 23,
+  "chipSize": 32.0,
+  "scale": 1.0,
+  "scrollable": false,
+  "actors": [
+    {
+      "type": "BreakoutPlayer",
+      "id": "1",
+      "x": 590.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "2",
+      "x": 690.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "3",
+      "x": 498.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "4",
+      "x": 782.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "5",
+      "x": 402.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "6",
+      "x": 878.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "7",
+      "x": 306.0,
+      "y": 672.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BreakoutPlayer",
+      "id": "8",
+      "x": 974.0,
+      "y": 672.0,
+      "args": [
+        1
+      ]
+    },
+    {
+      "type": "BreakoutKey",
+      "id": "",
+      "x": 640.0,
+      "y": 576.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "BreakoutSyncArea",
+      "id": "",
+      "x": 0.0,
+      "y": 0.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "Goal",
+      "id": "",
+      "x": 640.0,
+      "y": 674.0,
+      "args": [
+        0
+      ]
+    },
+    {
+      "type": "Watch",
+      "id": "",
+      "x": 36.0,
+      "y": 60.0,
+      "args": [
+        46
+      ]
+    }
+  ],
+  "tiles": []
+}

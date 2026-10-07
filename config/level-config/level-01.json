@@ -1,0 +1,7 @@
+{
+  "id": "level-01",
+  "name": "Level 1: Jump",
+  "stageFile": "stage_jump01.json",
+  "requiredPlayers": 1,
+  "minPlayers": 1
+}

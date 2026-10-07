@@ -1,0 +1,7 @@
+{
+  "id": "level-04",
+  "name": "Level 4: Push Color",
+  "stageFile": "stage_push01.json",
+  "requiredPlayers": 1,
+  "minPlayers": 1
+}

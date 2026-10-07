@@ -1,0 +1,123 @@
+{
+  "server": {
+    "tickRate": 60,
+    "networkTickRate": 30,
+    "defaultPort": 3001
+  },
+  "player": {
+    "width": 42,
+    "height": 46,
+    "gravity": 1400,
+    "colors": [
+      {
+        "id": 1,
+        "name": "Peach",
+        "hex": "#ffbf7f",
+        "rgb": [
+          255,
+          191,
+          127
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Periwinkle",
+        "hex": "#8c8cff",
+        "rgb": [
+          140,
+          140,
+          255
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Cyan",
+        "hex": "#8cffff",
+        "rgb": [
+          140,
+          255,
+          255
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Pastel Green",
+        "hex": "#a8ffa8",
+        "rgb": [
+          168,
+          255,
+          168
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Sky Blue",
+        "hex": "#82b7ff",
+        "rgb": [
+          130,
+          183,
+          255
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Pink",
+        "hex": "#ffa8ff",
+        "rgb": [
+          255,
+          168,
+          255
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Rose",
+        "hex": "#ff9fcf",
+        "rgb": [
+          255,
+          159,
+          207
+        ]
+      },
+      {
+        "id": 8,
+        "name": "Light Gray",
+        "hex": "#e0e0e0",
+        "rgb": [
+          224,
+          224,
+          224
+        ]
+      },
+      {
+        "id": 9,
+        "name": "Slate Blue",
+        "hex": "#9fb7cf",
+        "rgb": [
+          159,
+          183,
+          207
+        ]
+      },
+      {
+        "id": 10,
+        "name": "White",
+        "hex": "#ffffff",
+        "rgb": [
+          255,
+          255,
+          255
+        ]
+      }
+    ]
+  },
+  "chain": {
+    "defaultMaxDistance": 120,
+    "defaultMinDistance": 35,
+    "defaultStrength": 0.8
+  },
+  "room": {
+    "maxPlayers": 8,
+    "minPlayers": 2
+  }
+}

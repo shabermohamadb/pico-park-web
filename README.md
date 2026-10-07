@@ -81,34 +81,132 @@ A web-based, real-time cooperative multiplayer conversion of **PICO PARK**, buil
 
 ```
 pico-park-web/
-├── client/                     # Web frontend
-│   ├── index.html              # Clean responsive HTML markup
-│   ├── css/
-│   │   └── style.css           # Modern minimalist game styling
-│   ├── js/
-│   │   ├── main.js             # Client lifecycle and render loop
-│   │   ├── renderer.js         # Canvas 2D engine with sprite tinting
-│   │   ├── network.js          # WebSocket client & snapshot interpolation
-│   │   ├── audio.js            # Web Audio API sound manager
-│   │   ├── input.js            # Keyboard handler (WASD/Arrows/Space)
-│   │   └── ui.js               # UI screen manager & toasts
-│   └── assets/
-│       ├── audio/              # 32 authentic extracted OGG sound files
-│       └── sprites/            # Master sprite sheet, font, and UI textures
-├── server/                     # Backend authoritative server
-│   ├── index.js                # Express static server & WebSocket handler
-│   └── roomManager.js          # Room lifecycle, host migration & game sessions
-├── shared/                     # Code shared between client and server
-│   ├── constants.js            # Shared constants, tile types, and protocols
-│   ├── physics.js              # Authoritative 2D physics simulation
-│   ├── levelLoader.js          # Level parser and actor spawner
-│   └── levels/                 # 94 converted JSON level files & manifest
-├── test/
-│   └── integration_test.js     # Automated multi-client test suite
-├── .env.example
-├── .gitignore
-└── package.json
+│
+├── src/                            # Application Source Code
+│   ├── client/                     # Web client modules (network, renderer, UI, input)
+│   ├── server/                     # Express & WebSocket server, room management
+│   ├── game/                       # Modular core gameplay logic
+│   │   ├── player/                 # PlayerController (movement, input prediction)
+│   │   ├── physics/                # PhysicsManager (authoritative 2D physics world)
+│   │   ├── chain/                  # ChainManager (co-op player tether & constraint solver)
+│   │   ├── objects/                # Object models (Box, Key, Door, Switch, Platform, Spikes)
+│   │   ├── collision/              # CollisionSystem (AABB, de-penetration, overlap checks)
+│   │   ├── levels/                 # LevelManager (level parser & actor mapper)
+│   │   └── game-state/             # GameState (constants, protocols, room & stage states)
+│   └── audio/                      # AudioManager (procedural Web Audio & BGM management)
+│
+├── assets/                         # Organized Game Assets
+│   ├── players/                    # Player graphics, sprites, and animations
+│   │   ├── player-sprites/         # Master sprite sheet (picolecitta.png)
+│   │   ├── player-animations/      # Preserved animation sheets & frames
+│   │   └── player-effects/         # Player particle & emote visual assets
+│   ├── maps/                       # Level map definitions and layouts
+│   │   ├── level-01/               # Level 1: Jump (stage_jump01.json)
+│   │   ├── level-02/               # Level 2: Push (stage_push02.json)
+│   │   ├── level-03/               # Level 3: Time Trampoline (stage_time_trampoline.json)
+│   │   └── level-data/             # Complete library of all 88 stage JSON files & manifest
+│   ├── objects/                    # Gameplay object assets
+│   │   ├── boxes/                  # Pushable box definitions & textures
+│   │   ├── keys/                   # Golden key assets
+│   │   ├── doors/                  # Goal exit doors
+│   │   ├── switches/               # Floor and wall switches
+│   │   ├── platforms/              # Floating platforms and bridges
+│   │   └── hazards/                # Spike hazard assets
+│   ├── audio/                      # Audio library
+│   │   ├── music/                  # BGM tracks (game-theme.mp3, game-theme.ogg, title_bgm)
+│   │   ├── sfx/                    # 35+ sound effects (jump, clear, coin, switch, get, hit)
+│   │   └── voice/                  # Emote audio cues
+│   ├── ui/                         # UI textures and bitmap fonts (font.png, ui.png)
+│   ├── backgrounds/                # Stage background elements
+│   └── effects/                    # Particles and visual effect assets
+│
+├── config/                         # Configuration
+│   ├── game-config/                # Global game tuning (tick rates, physics, colors)
+│   └── level-config/               # World progression & stage manifests (level-01..04.json)
+│
+├── public/                         # Public static web entry point
+│   ├── index.html                  # Responsive HTML interface
+│   └── css/                        # Game styles (style.css)
+│
+├── tests/                          # Automated test suites (107 / 107 passing tests)
+│   ├── master_test.js              # Master 20-scenario game loop test
+│   ├── stage_time_trampoline_test.js # Level 3: Time Trampoline 14-scenario verification
+│   ├── chain_system_test.js        # Co-op chain constraint & physics test
+│   ├── latency_prediction_test.js  # Client prediction & reconciliation test
+│   ├── audio_integration_test.js   # Audio asset loading & deduplication test
+│   ├── integration_test.js         # Full multiplayer WebSocket integration test
+│   └── browser_*.js                # Puppeteer headless browser visual verifications
+│
+├── package.json                    # Project metadata & npm test scripts
+├── README.md                       # Architecture & developer documentation
+└── .env.example                    # Environment variable template
 ```
+
+---
+
+## Presentation Quick Reference
+
+When presenting or explaining the codebase to students, reviewers, or teammates:
+
+| Question | Answer / Path |
+| :--- | :--- |
+| **"Where is the player?"** | `assets/players/` (sprites & textures) & `src/game/player/` (controller logic) |
+| **"Where are the maps?"** | `assets/maps/` (stage JSON data & layouts) |
+| **"Where are the game objects?"** | `assets/objects/` (assets) & `src/game/objects/` (classes) |
+| **"Where is the chain logic?"** | `src/game/chain/ChainManager.js` |
+| **"Where is the level logic?"** | `src/game/levels/LevelManager.js` |
+| **"Where are the sounds?"** | `assets/audio/music/` and `assets/audio/sfx/` |
+| **"Where is physics simulated?"** | `src/game/physics/PhysicsManager.js` |
+
+---
+
+## Gameplay Flow
+
+```
+Player Input
+    │
+    ▼
+Player Controller (Client Prediction)
+    │
+    ▼
+Authoritative Physics Simulation (60Hz)
+    │
+    ▼
+Collision System (Solid Tiles & Pushable Boxes)
+    │
+    ▼
+Chain System (Cooperative Constraint Solver)
+    │
+    ▼
+Gameplay Objects (Switches, Gates, Keys, Spikes)
+    │
+    ▼
+Goal Door Unlocked (All Keys & Switches Active)
+    │
+    ▼
+Level Complete! (All Players Enter Goal Door)
+```
+
+---
+
+## Automated Testing
+
+Run all 9 automated test suites covering 107 test scenarios:
+
+```bash
+npm run test:all
+```
+
+Test breakdown:
+- `tests/test_stacking.js`: 5 / 5 PASS
+- `tests/master_test.js`: 20 / 20 PASS
+- `tests/box_collision_test.js`: 12 / 12 PASS
+- `tests/stage_time_trampoline_test.js`: 14 / 14 PASS
+- `tests/stage_push01_test.js`: 10 / 10 PASS
+- `tests/latency_prediction_test.js`: 10 / 10 PASS
+- `tests/audio_integration_test.js`: 5 / 5 PASS
+- `tests/chain_system_test.js`: 14 / 14 PASS
+- `tests/integration_test.js`: 16 / 16 PASS
 
 ---
 
@@ -120,5 +218,5 @@ pico-park-web/
    - `PORT`: Provided automatically by the host (default: `3001`).
    - `NODE_ENV`: Set to `production`.
 2. **Build Command**: `npm install`
-3. **Start Command**: `npm start`
-4. The server automatically serves both the static web frontend and WebSocket connections over the same port.
+3. **Start Command**: `npm start` (`node src/server/index.js`)
+4. The server automatically mounts static assets from `public/`, `assets/`, `src/client/`, with backward-compatible aliases for legacy routes ensuring zero 404s.

@@ -2,12 +2,12 @@
   "name": "pico-park-web",
   "version": "1.0.0",
   "description": "Authentic web-based real-time multiplayer conversion of PICO PARK",
-  "main": "server/index.js",
+  "main": "src/server/index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "test": "node test/master_test.js && node test/test_stacking.js && node test/box_collision_test.js && node test/stage_jump02_test.js && node test/stage_push01_test.js && node test/latency_prediction_test.js && node test/audio_integration_test.js",
-    "test:master": "node test/master_test.js",
-    "test:all": "node test/test_stacking.js && node test/master_test.js && node test/box_collision_test.js && node test/stage_jump02_test.js && node test/stage_push01_test.js && node test/latency_prediction_test.js && node test/audio_integration_test.js && node test/integration_test.js"
+    "start": "node src/server/index.js",
+    "test": "node tests/master_test.js && node tests/test_stacking.js && node tests/box_collision_test.js && node tests/stage_time_trampoline_test.js && node tests/stage_push01_test.js && node tests/latency_prediction_test.js && node tests/audio_integration_test.js && node tests/chain_system_test.js",
+    "test:master": "node tests/master_test.js",
+    "test:all": "node tests/test_stacking.js && node tests/master_test.js && node tests/box_collision_test.js && node tests/stage_time_trampoline_test.js && node tests/stage_push01_test.js && node tests/latency_prediction_test.js && node tests/audio_integration_test.js && node tests/chain_system_test.js && node tests/integration_test.js"
   },
   "keywords": [
     "pico-park",
@@ -22,5 +22,8 @@
     "compression": "^1.8.2",
     "express": "^4.21.2",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.12.0"
   }
 }

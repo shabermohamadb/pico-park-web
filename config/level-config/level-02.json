@@ -1,0 +1,7 @@
+{
+  "id": "level-02",
+  "name": "Level 2: Push",
+  "stageFile": "stage_push02.json",
+  "requiredPlayers": 1,
+  "minPlayers": 1
+}
